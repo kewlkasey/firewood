@@ -318,9 +318,17 @@ export default function DirectoryPage() {
       setFilteredStands(stands)
     } else {
       const stateAbbr = STATE_ABBREVIATIONS[selectedState]
-      const filtered = stands.filter(
-        (stand) => stand.address.includes(`, ${stateAbbr} `) || stand.address.includes(`, ${stateAbbr},`),
-      )
+      const filtered = stands.filter((stand) => {
+        const address = stand.address
+        // Check for various address formats:
+        // "City, STATE ZIP" or "Street, City, STATE ZIP" or "City, STATE" or contains ", STATE "
+        return address.includes(`, ${stateAbbr} `) || 
+               address.includes(`, ${stateAbbr},`) ||
+               address.includes(` ${stateAbbr} `) ||
+               address.endsWith(`, ${stateAbbr}`) ||
+               address.includes(selectedState) // Also check for full state name
+      })
+      console.log(`Filtering for ${selectedState} (${stateAbbr}): found ${filtered.length} stands`)
       setFilteredStands(filtered)
     }
   }, [selectedState, stands])
@@ -581,7 +589,7 @@ export default function DirectoryPage() {
             <div className="flex items-center gap-1">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <rect width="24" height="24" rx="4" fill="#0070BA"/>
-                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">P</text>
+                <text x="12" y="17" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">P</text>
               </svg>
               <span>PayPal</span>
             </div>
