@@ -132,6 +132,13 @@ export default function InteractiveMap() {
 
         console.log("Map initialized successfully")
         setMapReady(true)
+        
+        // Force map to resize to fill container
+        setTimeout(() => {
+          if (map.current) {
+            map.current.invalidateSize()
+          }
+        }, 100)
       } else {
         const missingRequirements = []
         if (!mapContainer.current) missingRequirements.push("mapContainer")
@@ -470,7 +477,10 @@ export default function InteractiveMap() {
         <div 
           ref={mapContainer} 
           className="w-full h-full" 
-          style={{ display: mapReady ? 'block' : 'none' }}
+          style={{ 
+            display: mapReady ? 'block' : 'none',
+            minHeight: '400px'
+          }}
         />
       </div>
 
