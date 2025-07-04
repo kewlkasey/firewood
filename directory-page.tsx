@@ -167,16 +167,30 @@ function StandCard({ stand }: { stand: FirewoodStand }) {
   }
 
   const getCityState = (address: string) => {
-    const parts = address.split(",")
-    if (parts.length >= 2) {
-      const city = parts[parts.length - 3]?.trim() || parts[0]?.trim()
-      const stateAbbr = parts[parts.length - 2]?.trim()
-
+    const parts = address.split(",").map(part => part.trim())
+    
+    if (parts.length >= 3) {
+      // Format: "Street, City, State ZIP" 
+      const city = parts[1]
+      const stateZip = parts[2].split(' ')
+      const stateAbbr = stateZip[0]
+      
       // Convert state abbreviation to full state name
       const fullStateName = Object.keys(STATE_ABBREVIATIONS).find((key) => STATE_ABBREVIATIONS[key] === stateAbbr)
-
+      
+      return `${city}, ${fullStateName || stateAbbr}`
+    } else if (parts.length === 2) {
+      // Format: "City, State" or "City, State ZIP"
+      const city = parts[0]
+      const stateZip = parts[1].split(' ')
+      const stateAbbr = stateZip[0]
+      
+      // Convert state abbreviation to full state name
+      const fullStateName = Object.keys(STATE_ABBREVIATIONS).find((key) => STATE_ABBREVIATIONS[key] === stateAbbr)
+      
       return `${city}, ${fullStateName || stateAbbr}`
     }
+    
     return address
   }
 
