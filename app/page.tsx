@@ -321,7 +321,7 @@ export default function Page() {
                 </li>
                 <li>
                   <Link href="/directory" className="hover:text-white transition-colors">
-                    DIRECTORY
+                    Directory
                   </Link>
                 </li>
                 <li>
