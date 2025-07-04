@@ -373,7 +373,8 @@ export default function InteractiveMap() {
 
       return methods.map(method => {
         const icon = getPaymentIcon(method)
-        return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;">${icon} ${method}</span>`
+        const displayMethod = method.replace(/Cash Box/gi, 'Cash')
+        return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;">${icon} ${displayMethod}</span>`
       }).join('')
     }
 

@@ -319,14 +319,18 @@ export default function DirectoryPage() {
     } else {
       const stateAbbr = STATE_ABBREVIATIONS[selectedState]
       const filtered = stands.filter((stand) => {
-        const address = stand.address
+        const address = stand.address.toLowerCase()
+        const stateAbbr = STATE_ABBREVIATIONS[selectedState].toLowerCase()
+        const selectedStateLower = selectedState.toLowerCase()
+        
         // Check for various address formats:
         // "City, STATE ZIP" or "Street, City, STATE ZIP" or "City, STATE" or contains ", STATE "
         return address.includes(`, ${stateAbbr} `) || 
                address.includes(`, ${stateAbbr},`) ||
                address.includes(` ${stateAbbr} `) ||
                address.endsWith(`, ${stateAbbr}`) ||
-               address.includes(selectedState) // Also check for full state name
+               address.includes(stateAbbr) || // Check for state abbreviation anywhere
+               address.includes(selectedStateLower) // Also check for full state name
       })
       console.log(`Filtering for ${selectedState} (${stateAbbr}): found ${filtered.length} stands`)
       setFilteredStands(filtered)
@@ -338,9 +342,17 @@ export default function DirectoryPage() {
     const counts: { [key: string]: number } = {}
     US_STATES.forEach((state) => {
       const stateAbbr = STATE_ABBREVIATIONS[state]
-      const count = stands.filter(
-        (stand) => stand.address.includes(`, ${stateAbbr} `) || stand.address.includes(`, ${stateAbbr},`),
-      ).length
+      const count = stands.filter((stand) => {
+        const address = stand.address
+        // Check for various address formats:
+        // "City, STATE ZIP" or "Street, City, STATE ZIP" or "City, STATE" or contains ", STATE "
+        return address.includes(`, ${stateAbbr} `) || 
+               address.includes(`, ${stateAbbr},`) ||
+               address.includes(` ${stateAbbr} `) ||
+               address.endsWith(`, ${stateAbbr}`) ||
+               address.includes(stateAbbr) || // Check for state abbreviation anywhere
+               address.includes(state) // Also check for full state name
+      }).length
       counts[state] = count
     })
     setStateStandCounts(counts)
