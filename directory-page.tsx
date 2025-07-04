@@ -8,10 +8,9 @@ import {
   Filter,
   CheckCircle,
   Clock,
-  CreditCard,
-  Smartphone,
   DollarSign,
   Zap,
+  CircleDollarSign,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { supabase } from "./lib/supabase"
@@ -139,13 +138,13 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   Wyoming: "WY",
 }
 
-function getPaymentIcon(method: string) {
+const getPaymentIcon = (method: string) => {
   const lowerMethod = method.toLowerCase()
-  if (lowerMethod.includes("venmo")) return <Smartphone className="h-4 w-4 text-blue-600" />
-  if (lowerMethod.includes("paypal")) return <CreditCard className="h-4 w-4 text-blue-500" />
+  if (lowerMethod.includes("venmo")) return <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">V</div>
+  if (lowerMethod.includes("paypal")) return <div className="w-4 h-4 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>
   if (lowerMethod.includes("zelle")) return <Zap className="h-4 w-4 text-purple-600" />
   if (lowerMethod.includes("cash")) return <DollarSign className="h-4 w-4 text-green-600" />
-  return <CreditCard className="h-4 w-4 text-gray-600" />
+  return <CircleDollarSign className="h-4 w-4 text-gray-600" />
 }
 
 function StandCard({ stand }: { stand: FirewoodStand }) {
@@ -263,6 +262,9 @@ export default function DirectoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stateStandCounts, setStateStandCounts] = useState<{ [key: string]: number }>({})
+    const [sortBy, setSortBy] = useState<'name' | 'distance'>('name');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
 
   // Fetch stands from Supabase
   useEffect(() => {
@@ -370,6 +372,23 @@ export default function DirectoryPage() {
     )
   }
 
+    // Function to calculate distance between two coordinates
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 3958.8; // Radius of the earth in miles
+        const φ1 = lat1 * Math.PI / 180; // lat1 in radians
+        const φ2 = lat2 * Math.PI / 180; // lat2 in radians
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        const distance = R * c;
+        return distance;
+    }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f5f1e8] to-white">
       {/* Header */}
@@ -434,45 +453,44 @@ export default function DirectoryPage() {
         </div>
 
         {/* Filter Section */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Filter className="h-5 w-5 text-[#5e4b3a]" />
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-[#5e4b3a]" />
                 <label htmlFor="state-filter" className="text-sm font-medium text-[#5e4b3a]">
                   Filter by State:
                 </label>
+              </div>
+              <select
+                id="state-filter"
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a] focus:border-transparent"
+              >
+                <option value="">All States</option>
+                {US_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state} ({stateStandCounts[state] || 0})
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-by" className="text-sm font-medium text-[#5e4b3a]">
+                  Sort by:
+                </label>
                 <select
-                  id="state-filter"
-                  value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value)}
-                  className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#2d5d2a] focus:border-transparent"
+                  id="sort-by"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'name' | 'distance')}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a] focus:border-transparent"
                 >
-                  <option value="">All States</option>
-                  {US_STATES.map((state) => (
-                    <option
-                      key={state}
-                      value={state}
-                      disabled={stateStandCounts[state] === 0}
-                      className={stateStandCounts[state] === 0 ? "text-gray-400" : ""}
-                    >
-                      {state} {stateStandCounts[state] > 0 ? `(${stateStandCounts[state]})` : "(0)"}
-                    </option>
-                  ))}
+                  <option value="name">Name</option>
+                  <option value="distance">Distance {locationStatus !== 'granted' ? '(from default location)' : ''}</option>
                 </select>
               </div>
-              {selectedState && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-[#5e4b3a] border-[#5e4b3a] hover:bg-[#5e4b3a]/10 bg-transparent"
-                >
-                  Clear Filters
-                </Button>
-              )}
             </div>
-
             <div className="text-sm text-[#5e4b3a]/70">
               Showing {filteredStands.length} of {stands.length} stands
             </div>
@@ -488,11 +506,11 @@ export default function DirectoryPage() {
               <span>Cash</span>
             </div>
             <div className="flex items-center gap-1">
-              <Smartphone className="h-4 w-4 text-blue-600" />
+              <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">V</div>
               <span>Venmo</span>
             </div>
             <div className="flex items-center gap-1">
-              <CreditCard className="h-4 w-4 text-blue-500" />
+              <div className="w-4 h-4 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>
               <span>PayPal</span>
             </div>
             <div className="flex items-center gap-1">
@@ -500,7 +518,7 @@ export default function DirectoryPage() {
               <span>Zelle</span>
             </div>
             <div className="flex items-center gap-1">
-              <CreditCard className="h-4 w-4 text-gray-600" />
+              <CircleDollarSign className="h-4 w-4 text-gray-600" />
               <span>Other</span>
             </div>
           </div>

@@ -339,18 +339,22 @@ export default function InteractiveMap() {
     const getPaymentIcons = (methods: string[]) => {
       const iconMap: { [key: string]: string } = {
         'Cash': '💵',
-        'Venmo': '📱', 
-        'PayPal': '💳',
+        'Venmo': '<span style="background: #3b82f6; color: white; padding: 1px 3px; border-radius: 2px; font-size: 9px; font-weight: bold;">V</span>', 
+        'PayPal': '<span style="background: #0070ba; color: white; padding: 1px 3px; border-radius: 2px; font-size: 9px; font-weight: bold;">P</span>',
         'Zelle': '⚡',
         'Credit Card': '💳',
         'Check': '📄'
       }
 
       return methods.map(method => {
-        const icon = iconMap[method] || '💳'
-        return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px;">${icon} ${method}</span>`
+        const icon = iconMap[method] || '💰'
+        return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;">${icon} ${method}</span>`
       }).join('')
     }
+
+    const distanceDisplay = locationStatus === 'granted' 
+      ? `${distance.toFixed(1)} miles away`
+      : `<span title="Enable location sharing to see actual distance">${distance.toFixed(1)} miles away*</span>`
 
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">
@@ -360,7 +364,7 @@ export default function InteractiveMap() {
         </div>
 
         <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
-        <p style="margin: 0 0 8px 0; font-size: 12px; color: #2d5d2a; font-weight: 600;">${distance.toFixed(1)} miles away</p>
+        <p style="margin: 0 0 8px 0; font-size: 12px; color: #2d5d2a; font-weight: 600;">${distanceDisplay}</p>
 
         <div style="margin-bottom: 8px;">
           ${getPaymentIcons(stand.payment_methods)}
