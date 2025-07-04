@@ -38,9 +38,15 @@ export default function InteractiveMap() {
   // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      initializeMap()
+      // Wait for the component to fully render before initializing map
+      const timer = setTimeout(() => {
+        initializeMap()
+      }, 100)
+      
       fetchStands()
       requestUserLocation()
+      
+      return () => clearTimeout(timer)
     }
   }, [])
 
@@ -61,6 +67,12 @@ export default function InteractiveMap() {
 
   const initializeMap = async () => {
     try {
+      // Prevent multiple initializations
+      if (map.current) {
+        console.log("Map already initialized, skipping...")
+        return
+      }
+      
       console.log("Starting map initialization...")
       
       // Load Leaflet CSS
