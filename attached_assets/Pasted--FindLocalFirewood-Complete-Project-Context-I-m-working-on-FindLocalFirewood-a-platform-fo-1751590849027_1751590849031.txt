@@ -1,0 +1,160 @@
+# FindLocalFirewood - Complete Project Context
+
+I'm working on "FindLocalFirewood" - a platform for discovering local roadside firewood stands.
+
+## Project Summary:
+
+FindLocalFirewood is a community-driven web platform that helps people discover honor-system roadside firewood stands in their area. The platform allows stand owners to list their locations with details like wood types, pricing, and payment methods, while customers can browse, filter, and locate stands through an interactive map interface.
+
+
+
+**Core User Flows:**
+1. **Stand Owners**: Register → List their stand with photos/details → Manage listings
+2. **Customers**: Browse directory → Filter by location/wood type → View on map → Get directions; They can also add stands they come across.
+
+**Key Features:**
+- Interactive map with clickable pins showing stand locations and details
+- Comprehensive directory with filtering by state, wood type, and price range
+- User authentication with email confirmation
+- Stand submission form with address validation (via mapbox) and photo upload
+- Status system (active/pending approval) for quality control
+- Responsive design optimized for mobile and desktop use
+
+**Business Model**: Community platform connecting firewood sellers with buyers through an honor-system marketplace, focusing on rural and suburban areas where roadside stands are common.
+
+**Current Status**: Developing fully functional MVP with test data across Pennsylvania, Michigan, and Iowa. 
+
+
+## Tech Stack:
+- Next.js App Router with TypeScript
+- Supabase (auth + PostgreSQL database)
+- shadcn/ui components with Tailwind CSS
+- Brand colors: Forest green (#2d5d2a), warm brown (#5e4b3a), cream (#f5f1e8)
+
+## Database Schema:
+- profiles (id UUID PK→auth.users, email, first_name, last_name)
+- firewood_stands (id UUID PK, user_id→auth.users, stand_name, address, lat/lng DECIMAL, wood_types TEXT[], price_range, payment_methods TEXT[], additional_details, photo_url, onsite_person BOOLEAN, is_approved BOOLEAN)
+- reviews (id UUID PK, stand_id→firewood_stands, user_id→auth.users, rating 1-5, comment)
+
+## Current Features:
+✅ User registration/login with email confirmation (some bugs)
+✅ "List Your Stand" form with Mapbox address validation
+✅ Directory page with state filtering and status badges
+✅ Responsive design throughout
+
+## Key Dependencies:
+- @supabase/supabase-js, Leaflet (CDN), Mapbox Geocoding API, Lucide React icons
+- All shadcn/ui components available (@/components/ui/*)
+
+## Test Data:
+- ~28 test stands across PA, MI, IA (all prefixed "Test")
+- Mix of active/pending statuses, various wood types and prices
+
+## Environment Variables:
+- NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+- Mapbox token for address validation
+
+---
+
+## Detailed File Structure:
+
+### App Router Pages:
+- app/page.tsx - Main homepage (hero, interactive map, features, CTA sections)
+- app/directory/page.tsx - Browse all stands with state filtering
+- app/list-your-stand/page.tsx - Stand submission form route
+- app/login/page.tsx - User login route
+- app/register/page.tsx - User registration route
+- app/auth/confirm/page.tsx - Email confirmation with Suspense wrapper
+- app/test-db/page.tsx - Database testing utilities
+- app/simple-test/page.tsx - Basic connection testing
+- app/layout.tsx - Root layout (default shadcn)
+- app/globals.css - Global styles (default shadcn)
+
+### Core Components:
+- find-local-firewood-landing.tsx - Complete homepage component (hero, features, footer)
+- list-your-stand-form.tsx - Multi-step form with validation, file upload, address integration
+- directory-page.tsx - Stand browsing with filters, status badges, payment icons
+- login-page.tsx - Login form with validation and error handling
+- register-page.tsx - Registration form with email confirmation flow
+
+### Specialized Components:
+- components/interactive-map.tsx - Leaflet map with custom pins, popups, directions
+- components/address-input.tsx - Mapbox geocoding with suggestions, validation states
+- components/email-confirmation.tsx - Email verification handling with multiple states
+- components/database-test-button.tsx - Full registration flow testing utility
+- components/auth-layout.tsx - Shared auth page wrapper
+
+### Backend Integration:
+- lib/supabase.ts - Supabase client with TypeScript Database types
+- lib/auth.ts - Auth functions (register, login, logout, profile management)
+
+### Database Scripts (22 files):
+- scripts/001_create_profiles_table.sql - Profiles table with RLS policies
+- scripts/002_create_firewood_stands_table.sql - Main stands table with indexes
+- scripts/003_create_reviews_table.sql - Reviews system
+- scripts/004_create_functions_and_views.sql - Helper functions, nearby stands query
+- scripts/005_seed_sample_data.sql - Initial sample data
+- scripts/006-016_*.sql - Profile creation fixes, auth integration debugging
+- scripts/017_add_test_stands.sql - Pennsylvania test data (8 stands)
+- scripts/018_add_michigan_test_stands.sql - Michigan test data (10 stands)
+- scripts/019_add_iowa_test_stands_and_prefix.sql - Iowa data + "Test" prefixes
+- scripts/020-021_update_stand_statuses.sql - Mixed active/pending statuses
+- scripts/test_database_connection.js - Node.js database testing
+
+### Configuration:
+- tailwind.config.ts - Custom brand colors, shadcn integration
+- next.config.mjs - Default Next.js config
+- tsconfig.json - TypeScript configuration
+
+### Available shadcn/ui Components:
+All standard shadcn components available via @/components/ui/*:
+- Button, Card, Input, Select, Checkbox, etc.
+- Theme provider, mobile hooks, toast system
+
+### Key Interfaces & Types:
+// In lib/supabase.ts
+Database.public.Tables.profiles.Row/Insert/Update
+Database.public.Tables.firewood_stands.Row/Insert/Update
+
+// In components
+interface AddressData { formattedAddress, latitude, longitude, isValidated }
+interface FirewoodStand { id, stand_name, address, lat/lng, wood_types[], price_range, payment_methods[], additional_details, onsite_person, is_approved }
+interface FormData (various forms with validation)
+
+### External Integrations:
+- Mapbox Geocoding API - Address validation in address-input.tsx
+- Leaflet Maps - Interactive map loaded via CDN in interactive-map.tsx
+- Supabase Auth - Email/password with confirmation flow
+- Supabase Database - PostgreSQL with RLS policies
+
+### Test Data State:
+- 28 total stands across PA (8), MI (10), IA (10)
+- All prefixed with "Test" for easy identification
+- Mix of active (is_approved=true) and pending (is_approved=false)
+- Variety of wood types: Oak, Maple, Cherry, Ash, Hickory, Pine, etc.
+- Price ranges: Under $5, $5-10, $10-15, $15+, Varies
+- Payment methods: Cash Box, Venmo, PayPal, Zelle, Other
+- Geographic spread with real coordinates for mapping
+
+### Styling System:
+- Primary: #2d5d2a (forest green)
+- Secondary: #5e4b3a (warm brown)
+- Accent: #f5f1e8 (cream)
+- Consistent component patterns, responsive design
+- Custom form validation states, status badges
+- Payment method icons, wood type tags
+
+
+##TECHNICAL STACK (CONFIRMED)
+Platform: Vercel (with V0 for component building), moving to Replit and Replit Agent.
+Framework: Next.js (React)
+Database: Supabase
+Mapping: Mapbox
+Domain: findlocalfirewood.com
+
+##PLATFORM CREDENTIALS Domain: findlocalfirewood.com Mapbox Token:pk.eyJ1Ijoia2V3bGthc2V5IiwiYSI6ImNtY2dhanIwNjBoaHYyaW11eml0YmZ5NXkifQ.vAiEp6qkeCsTqJIuO7LSww
+Supabase Database URL: https://zfvufloublgtedsondrs.supabase.co
+Supabase Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdnVmbG91YmxndGVkc29uZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNjA1ODUsImV4cCI6MjA2NjczNjU4NX0.nTLZC2rkyq888YBYbWR1ZL3TVb6Mf8KeujiMiKG5bMQ
+---
+
+
