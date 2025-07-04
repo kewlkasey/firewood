@@ -1,0 +1,106 @@
+Homepage Interactive Map Requirements - FindLocalFirewood MVP
+Overview
+Build an interactive map component for the FindLocalFirewood homepage that displays nearby firewood stands within 25 miles of the user's location (or default location). Note: The current map section on the homepage does not load properly and needs to be rebuilt.
+Technical Stack Requirements
+Framework: Next.js with TypeScript
+Map Library: Leaflet (load via CDN: https://unpkg.com/leaflet@1.9.4/dist/leaflet.js)
+CSS: Load Leaflet CSS via CDN: https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+Data Source: Supabase PostgreSQL database
+Styling: Tailwind CSS with brand colors
+Icons: Lucide React icons for UI elements
+Location & Data Requirements
+Default Location Handling
+Primary: Use user's current geolocation if available/permitted
+Fallback: 36300 Front St, New Baltimore, MI 48047 (coordinates: 42.6369, -82.7326)
+Error Messaging: Show user-friendly message if geolocation fails, then use fallback
+Radius: Display stands within 25 miles of user's location (or fallback location)
+Database Integration
+Table: firewood_stands
+Filter Criteria:
+Display both approved (is_approved = true) and pending (is_approved = false) stands
+Within 25-mile radius of user location
+Required Fields: id, stand_name, address, lat, lng, payment_methods, is_approved, average_rating (if reviews exist)
+Connection: Use existing Supabase client from lib/supabase.ts
+Map Display Requirements
+Basic Map Setup
+Container: Fit into existing homepage map section
+Desktop Size: Full width of container, appropriate height for homepage layout
+Mobile Size: Full width, ~300px height for mobile devices
+Default View: Center on user location (or New Baltimore fallback)
+Zoom Level: Appropriate to show 25-mile radius area
+Tile Layer: OpenStreetMap tiles (free)
+Map Controls
+Zoom Controls: Standard zoom in/out buttons
+Refresh Button: Button to refresh both location and stand data
+Loading State: Show loading indicator during data fetch and map initialization
+Stand Markers & Interaction
+Marker Display
+Approved Stands: Forest green (#2d5d2a) pin markers
+Pending Stands: Orange/amber (#f59e0b) pin markers for pending approval
+Hover Effect: Subtle scale/highlight on hover
+Click Behavior: Open popup with stand details
+Popup Content
+When clicking a stand marker, display popup containing:
+Stand Name (heading text, eventually will be clickable link)
+Full Address (street address)
+Distance (calculated from user location, e.g., "2.3 miles away")
+Payment Methods (display as icons with legend)
+Star Rating (display average rating if reviews exist, or "No ratings yet")
+Get Directions (placeholder text for now - will eventually link to default map app)
+Close Button (X in top-right corner)
+Payment Method Icons
+Important: Use existing payment method icons and styling that are already implemented in the project. Maintain consistency with the current directory page implementation for:
+Cash/Cash Box
+Venmo
+PayPal
+Zelle
+Reference the existing directory-page.tsx component for the exact icon implementation.
+Legend Requirements
+Location: Display either overlay on map or below map
+Content: Show what each payment method icon represents
+Style: Small, unobtrusive but clearly readable
+Error Handling & UX
+Geolocation Handling
+Permission Denied: Show message "Location access denied. Showing stands near New Baltimore, MI" and use fallback
+Geolocation Error: Show message "Unable to get your location. Showing stands near New Baltimore, MI" and use fallback
+Timeout: 5-second timeout, then fallback with message
+Data Loading
+Loading State: Show spinner/loading indicator while fetching stands
+No Data: If no stands found in 25-mile radius, show "No firewood stands found in your area"
+Error State: Handle database connection errors gracefully
+Distance Calculation
+Method: Calculate straight-line distance between user location and each stand
+Units: Display in miles (e.g., "2.3 miles away")
+Precision: One decimal place
+Component Structure
+components/
+├── interactive-map.tsx (main map component)
+├── map-legend.tsx (payment method legend)
+└── map-loading.tsx (loading state component)
+
+Database Query Requirements
+Include both approved and pending stands
+Calculate distance for each stand
+Only return stands within 25-mile radius
+Include all required fields for popup display
+Handle empty results gracefully
+Styling Requirements
+Brand Colors: Use forest green (#2d5d2a) for pins and accents
+Responsive Design: Mobile-first approach
+Accessibility: Proper ARIA labels and keyboard navigation
+Performance: Lazy load map to not block page rendering
+Future Considerations (Not MVP)
+Dedicated Map Page: Full-featured map page with address search functionality
+Stand page links (placeholder in name for now)
+Advanced filtering options
+Real-time directions integration
+Clustering for many nearby stands
+User reviews and ratings display
+Testing Requirements
+Test Data: Use existing 28 test stands in database
+Location Testing: Test both with and without geolocation permission
+Responsive Testing: Verify mobile and desktop layouts
+Error Testing: Test network failures and empty data states
+
+
+
