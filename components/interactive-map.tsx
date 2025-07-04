@@ -324,9 +324,14 @@ export default function InteractiveMap() {
 
     const getCityState = (address: string) => {
       const parts = address.split(",")
-      if (parts.length >= 2) {
-        const city = parts[parts.length - 3]?.trim() || parts[0]?.trim()
+      if (parts.length >= 3) {
+        const city = parts[parts.length - 3]?.trim()
         const state = parts[parts.length - 2]?.trim()
+        const zip = parts[parts.length - 1]?.trim()
+        return `${city}, ${state} ${zip}`
+      } else if (parts.length >= 2) {
+        const city = parts[parts.length - 2]?.trim() || parts[0]?.trim()
+        const state = parts[parts.length - 1]?.trim()
         return `${city}, ${state}`
       }
       return address

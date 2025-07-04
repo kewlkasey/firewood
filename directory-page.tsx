@@ -312,6 +312,15 @@ export default function DirectoryPage() {
     requestUserLocation()
   }, [])
 
+  // Set default sort based on location status
+  useEffect(() => {
+    if (locationStatus === 'granted') {
+      setSortBy('distance')
+    } else if (locationStatus === 'denied' || locationStatus === 'unavailable') {
+      setSortBy('name')
+    }
+  }, [locationStatus])
+
   // Filter stands based on selected state
   useEffect(() => {
     let filtered = stands
