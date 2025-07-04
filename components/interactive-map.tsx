@@ -3,13 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, MapPin, Loader2 } from "lucide-react"
-let supabase: any = null
-try {
-  const supabaseModule = await import("../lib/supabase")
-  supabase = supabaseModule.supabase
-} catch (error) {
-  console.warn("Supabase not available:", error)
-}
+import { supabase } from "../lib/supabase"
 
 interface FirewoodStand {
   id: string
@@ -112,33 +106,7 @@ export default function InteractiveMap() {
       setLoading(true)
       setError(null)
 
-      if (!supabase) {
-        console.warn("Supabase client not available, using mock data")
-        // Use mock data for demonstration
-        const mockStands = [
-          {
-            id: "1",
-            stand_name: "Test Cedar Valley Wood",
-            address: "4680 Cedar Street, West Union, IA 52175",
-            latitude: 42.9635,
-            longitude: -91.8087,
-            payment_methods: ["Cash", "Venmo"],
-            is_approved: false
-          },
-          {
-            id: "2", 
-            stand_name: "Test Hawkeye Firewood",
-            address: "1234 Highway 3, Strawberry Point, IA 52076",
-            latitude: 42.6849,
-            longitude: -91.5351,
-            payment_methods: ["Cash", "PayPal"],
-            is_approved: true
-          }
-        ]
-        setAllStands(mockStands)
-        setLoading(false)
-        return
-      }
+      console.log("Fetching stands from Supabase...")
 
       const { data, error: fetchError } = await supabase
         .from("firewood_stands")
