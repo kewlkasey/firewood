@@ -337,17 +337,42 @@ export default function InteractiveMap() {
     }
 
     const getPaymentIcons = (methods: string[]) => {
-      const iconMap: { [key: string]: string } = {
-        'Cash': '💵',
-        'Venmo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#3D95CE"/><path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/></svg>', 
-        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><text x="12" y="17" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif">P</text></svg>',
-        'Zelle': '⚡',
-        'Credit Card': '💳',
-        'Check': '📄'
+      const getPaymentIcon = (method: string) => {
+        const lowerMethod = method.toLowerCase()
+        if (lowerMethod.includes("venmo")) return `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;">
+            <rect width="24" height="24" rx="4" fill="#3D95CE"/>
+            <path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/>
+          </svg>
+        `
+        if (lowerMethod.includes("paypal")) return `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;">
+            <rect width="24" height="24" rx="4" fill="#0070BA"/>
+            <text x="12" y="17" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif">P</text>
+          </svg>
+        `
+        if (lowerMethod.includes("zelle")) return `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; color: #6b46c1;">
+            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+          </svg>
+        `
+        if (lowerMethod.includes("cash")) return `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; color: #16a34a;">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        `
+        return `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; color: #6b7280;">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+            <path d="M12 18V6"/>
+          </svg>
+        `
       }
 
       return methods.map(method => {
-        const icon = iconMap[method] || '💰'
+        const icon = getPaymentIcon(method)
         return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;">${icon} ${method}</span>`
       }).join('')
     }
