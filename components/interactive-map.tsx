@@ -340,7 +340,7 @@ export default function InteractiveMap() {
       const iconMap: { [key: string]: string } = {
         'Cash': '💵',
         'Venmo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#3D95CE"/><path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/></svg>', 
-        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><path d="M7.5 5h4.5c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8h-2.7l-.6 3.6h2.7c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8H7.5L9 5z" fill="white"/><path d="M9.5 7h2.5c1.1 0 2 .9 2 2s-.9 2-2 2h-1.5l-.3 1.5h1.8c1.1 0 2 .9 2 2s-.9 2-2 2H9.5L10.5 7z" fill="#0070BA"/></svg>',
+        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial">P</text></svg>',
         'Zelle': '⚡',
         'Credit Card': '💳',
         'Check': '📄'

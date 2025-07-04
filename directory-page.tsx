@@ -149,8 +149,7 @@ const getPaymentIcon = (method: string) => {
   if (lowerMethod.includes("paypal")) return (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
       <rect width="24" height="24" rx="4" fill="#0070BA"/>
-      <path d="M7.5 5h4.5c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8h-2.7l-.6 3.6h2.7c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8H7.5L9 5z" fill="white"/>
-      <path d="M9.5 7h2.5c1.1 0 2 .9 2 2s-.9 2-2 2h-1.5l-.3 1.5h1.8c1.1 0 2 .9 2 2s-.9 2-2 2H9.5L10.5 7z" fill="#0070BA"/>
+      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">P</text>
     </svg>
   )
   if (lowerMethod.includes("zelle")) return <Zap className="h-4 w-4 text-purple-600" />
@@ -535,8 +534,7 @@ export default function DirectoryPage() {
             <div className="flex items-center gap-1">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <rect width="24" height="24" rx="4" fill="#0070BA"/>
-                <path d="M7.5 5h4.5c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8h-2.7l-.6 3.6h2.7c2.1 0 3.8 1.7 3.8 3.8 0 2.1-1.7 3.8-3.8 3.8H7.5L9 5z" fill="white"/>
-                <path d="M9.5 7h2.5c1.1 0 2 .9 2 2s-.9 2-2 2h-1.5l-.3 1.5h1.8c1.1 0 2 .9 2 2s-.9 2-2 2H9.5L10.5 7z" fill="#0070BA"/>
+                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">P</text>
               </svg>
               <span>PayPal</span>
             </div>
