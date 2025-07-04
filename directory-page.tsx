@@ -157,7 +157,17 @@ const getPaymentIcon = (method: string) => {
   return <CircleDollarSign className="h-4 w-4 text-gray-600" />
 }
 
-function StandCard({ stand }: { stand: FirewoodStand }) {
+function StandCard({ 
+  stand, 
+  userLocation, 
+  locationStatus, 
+  calculateDistance 
+}: { 
+  stand: FirewoodStand
+  userLocation: { lat: number; lng: number }
+  locationStatus: 'prompt' | 'granted' | 'denied' | 'unavailable'
+  calculateDistance: (lat1: number, lng1: number, lat2: number, lng2: number) => number
+}) {
   const getStatusBadge = () => {
     if (stand.is_approved) {
       return (
@@ -617,7 +627,13 @@ export default function DirectoryPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredStands.map((stand) => (
-              <StandCard key={stand.id} stand={stand} />
+              <StandCard 
+                key={stand.id} 
+                stand={stand} 
+                userLocation={userLocation}
+                locationStatus={locationStatus}
+                calculateDistance={calculateDistance}
+              />
             ))}
           </div>
         )}
