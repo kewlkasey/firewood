@@ -149,7 +149,7 @@ const getPaymentIcon = (method: string) => {
   if (lowerMethod.includes("paypal")) return (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
       <rect width="24" height="24" rx="4" fill="#0070BA"/>
-      <path d="M8 6h4.5c2.5 0 4.5 1.5 4.5 3.5 0 1.2-.7 2.3-1.8 2.8.8.4 1.3 1.2 1.3 2.2 0 1.8-1.5 3.5-4 3.5H8V6zm2 3v2h2c.8 0 1.5-.5 1.5-1s-.7-1-1.5-1h-2zm0 4v2.5h2.5c1 0 1.5-.6 1.5-1.3s-.5-1.2-1.5-1.2H10z" fill="white"/>
+      <text x="12" y="17" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif">P</text>
     </svg>
   )
   if (lowerMethod.includes("zelle")) return <Zap className="h-4 w-4 text-purple-600" />
