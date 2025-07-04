@@ -44,6 +44,7 @@
     "cmdk": "1.0.4",
     "components": "link:@/components",
     "date-fns": "4.1.0",
+    "dotenv": "^17.0.1",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
