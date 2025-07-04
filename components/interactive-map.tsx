@@ -116,11 +116,13 @@ export default function InteractiveMap() {
         console.log("Map initialized successfully")
         setMapReady(true)
       } else {
-        console.error("Map initialization failed - missing requirements:", {
-          mapContainer: !!mapContainer.current,
-          mapExists: !!map.current,
-          leafletLoaded: !!window.L
-        })
+        const missingRequirements = []
+        if (!mapContainer.current) missingRequirements.push("mapContainer")
+        if (map.current) missingRequirements.push("mapAlreadyExists")
+        if (!window.L) missingRequirements.push("leafletNotLoaded")
+        
+        console.error("Map initialization failed - missing requirements:", missingRequirements.join(", "))
+        setError("Failed to initialize map - missing requirements: " + missingRequirements.join(", "))
       }
     } catch (error) {
       console.error("Error loading map:", error)
