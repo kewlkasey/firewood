@@ -61,8 +61,11 @@ export default function InteractiveMap() {
 
   const initializeMap = async () => {
     try {
+      console.log("Starting map initialization...")
+      
       // Load Leaflet CSS
       if (!document.querySelector('link[href*="leaflet"]')) {
+        console.log("Loading Leaflet CSS...")
         const link = document.createElement("link")
         link.rel = "stylesheet"
         link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -71,18 +74,35 @@ export default function InteractiveMap() {
 
       // Load Leaflet JS
       if (!window.L) {
+        console.log("Loading Leaflet JS...")
         await new Promise((resolve, reject) => {
           const script = document.createElement("script")
           script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          script.onload = resolve
-          script.onerror = reject
+          script.onload = () => {
+            console.log("Leaflet JS loaded successfully")
+            resolve(null)
+          }
+          script.onerror = (err) => {
+            console.error("Failed to load Leaflet JS:", err)
+            reject(err)
+          }
           document.head.appendChild(script)
         })
       }
 
+      // Wait a bit for Leaflet to be ready
+      await new Promise(resolve => setTimeout(resolve, 100))
+
       // Initialize map with fallback location
-      if (mapContainer.current && !map.current) {
-        map.current = window.L.map(mapContainer.current).setView([userLocation.lat, userLocation.lng], 10)
+      if (mapContainer.current && !map.current && window.L) {
+        console.log("Initializing map with location:", userLocation)
+        
+        map.current = window.L.map(mapContainer.current, {
+          center: [userLocation.lat, userLocation.lng],
+          zoom: 10,
+          zoomControl: true,
+          attributionControl: true
+        })
 
         // Add tile layer
         window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -93,11 +113,18 @@ export default function InteractiveMap() {
         // Initialize markers group
         markersGroup.current = window.L.featureGroup().addTo(map.current)
 
+        console.log("Map initialized successfully")
         setMapReady(true)
+      } else {
+        console.error("Map initialization failed - missing requirements:", {
+          mapContainer: !!mapContainer.current,
+          mapExists: !!map.current,
+          leafletLoaded: !!window.L
+        })
       }
     } catch (error) {
       console.error("Error loading map:", error)
-      setError("Failed to load map")
+      setError("Failed to load map: " + error.message)
     }
   }
 
@@ -117,13 +144,15 @@ export default function InteractiveMap() {
         .neq("longitude", 0)
 
       if (fetchError) {
+        console.error("Supabase fetch error:", fetchError)
         throw fetchError
       }
 
+      console.log("Fetched stands:", data?.length || 0, "stands")
       setAllStands(data || [])
     } catch (err: any) {
       console.error("Error fetching stands:", err)
-      setError("Failed to load firewood stands")
+      setError("Failed to load firewood stands: " + err.message)
     } finally {
       setLoading(false)
     }
@@ -406,7 +435,19 @@ export default function InteractiveMap() {
 
       {/* Map */}
       <div className="w-full h-[400px] md:h-[500px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
-        <div ref={mapContainer} className="w-full h-full" />
+        {!mapReady && !error && (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="animate-spin h-8 w-8 text-[#2d5d2a] mx-auto mb-2" />
+              <p className="text-[#5e4b3a]">Loading map...</p>
+            </div>
+          </div>
+        )}
+        <div 
+          ref={mapContainer} 
+          className="w-full h-full" 
+          style={{ display: mapReady ? 'block' : 'none' }}
+        />
       </div>
 
       {/* Legend */}
