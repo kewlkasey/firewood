@@ -140,8 +140,18 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
 
 const getPaymentIcon = (method: string) => {
   const lowerMethod = method.toLowerCase()
-  if (lowerMethod.includes("venmo")) return <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">V</div>
-  if (lowerMethod.includes("paypal")) return <div className="w-4 h-4 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>
+  if (lowerMethod.includes("venmo")) return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="4" fill="#3D95CE"/>
+      <path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/>
+    </svg>
+  )
+  if (lowerMethod.includes("paypal")) return (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="4" fill="#0070BA"/>
+      <path d="M7.5 4h4.8c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2h-2.4l-.6 3.6h3c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2H7.5l3-20.4z" fill="white"/>
+    </svg>
+  )
   if (lowerMethod.includes("zelle")) return <Zap className="h-4 w-4 text-purple-600" />
   if (lowerMethod.includes("cash")) return <DollarSign className="h-4 w-4 text-green-600" />
   return <CircleDollarSign className="h-4 w-4 text-gray-600" />
@@ -515,11 +525,17 @@ export default function DirectoryPage() {
               <span>Cash</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">V</div>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect width="24" height="24" rx="4" fill="#3D95CE"/>
+                <path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/>
+              </svg>
               <span>Venmo</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">P</div>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <rect width="24" height="24" rx="4" fill="#0070BA"/>
+                <path d="M7.5 4h4.8c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2h-2.4l-.6 3.6h3c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2H7.5l3-20.4z" fill="white"/>
+              </svg>
               <span>PayPal</span>
             </div>
             <div className="flex items-center gap-1">

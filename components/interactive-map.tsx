@@ -339,8 +339,8 @@ export default function InteractiveMap() {
     const getPaymentIcons = (methods: string[]) => {
       const iconMap: { [key: string]: string } = {
         'Cash': '💵',
-        'Venmo': '<span style="background: #3b82f6; color: white; padding: 1px 3px; border-radius: 2px; font-size: 9px; font-weight: bold;">V</span>', 
-        'PayPal': '<span style="background: #0070ba; color: white; padding: 1px 3px; border-radius: 2px; font-size: 9px; font-weight: bold;">P</span>',
+        'Venmo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#3D95CE"/><path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/></svg>', 
+        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><path d="M7.5 4h4.8c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2h-2.4l-.6 3.6h3c2.4 0 4.2 1.8 4.2 4.2 0 2.4-1.8 4.2-4.2 4.2H7.5l3-20.4z" fill="white"/></svg>',
         'Zelle': '⚡',
         'Credit Card': '💳',
         'Check': '📄'
