@@ -15,7 +15,7 @@ export default function Page() {
             <span className="text-xl font-bold text-[#2d5d2a]">FindLocalFirewood</span>
           </div>
           <nav className="hidden md:flex gap-6">
-            <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
+            <Link href="/directory" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
               Find Stands
             </Link>
             <Link href="/list-your-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
@@ -60,6 +60,13 @@ export default function Page() {
       </header>
 
       <main className="flex-1">
+        {/* Interactive Map Section */}
+        <section className="py-16 md:py-24 bg-white">
+          <div className="container">
+            <InteractiveMap />
+          </div>
+        </section>
+
         {/* Hero Section */}
         <section className="relative py-20 md:py-28 bg-gradient-to-b from-[#f5f1e8] to-white">
           <div className="container flex flex-col md:flex-row items-center gap-8 md:gap-16">
@@ -99,13 +106,6 @@ export default function Page() {
                 priority
               />
             </div>
-          </div>
-        </section>
-
-        {/* Interactive Map Section */}
-        <section className="py-16 md:py-24 bg-white">
-          <div className="container">
-            <InteractiveMap />
           </div>
         </section>
 
