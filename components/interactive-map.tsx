@@ -354,7 +354,7 @@ export default function InteractiveMap() {
 
     const distanceDisplay = locationStatus === 'granted' 
       ? `${distance.toFixed(1)} miles away`
-      : `<span title="Enable location sharing to see actual distance">${distance.toFixed(1)} miles away*</span>`
+      : `<span title="Enable location sharing for accurate distance">${distance.toFixed(1)} miles away*</span>`
 
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">

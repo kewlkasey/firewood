@@ -211,7 +211,15 @@ function StandCard({ stand }: { stand: FirewoodStand }) {
       <div className="flex items-center gap-2 mb-3 text-[#5e4b3a]/80">
         <MapPin className="h-4 w-4 flex-shrink-0" />
         <span className="text-sm">{getFormattedAddress(stand.address)}</span>
-        <span className="text-xs text-[#5e4b3a]/60 ml-auto">XX mi</span>
+        <span 
+          className="text-xs text-[#5e4b3a]/60 ml-auto cursor-help"
+          title={locationStatus !== 'granted' ? 'Enable location sharing for accurate distance' : undefined}
+        >
+          {stand.latitude && stand.longitude ? 
+            `${calculateDistance(userLocation.lat, userLocation.lng, stand.latitude, stand.longitude).toFixed(1)} mi` : 
+            'N/A mi'
+          }
+        </span>
       </div>
 
       {/* Wood Types */}
@@ -281,13 +289,14 @@ export default function DirectoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stateStandCounts, setStateStandCounts] = useState<{ [key: string]: number }>({})
-    const [sortBy, setSortBy] = useState<'name' | 'distance'>('name');
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [sortBy, setSortBy] = useState<'name' | 'distance'>('name');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>({ lat: 42.6369, lng: -82.7326 }) // Default to New Baltimore, MI
   const [locationStatus, setLocationStatus] = useState<'prompt' | 'granted' | 'denied' | 'unavailable'>('prompt');
 
-  // Fetch stands from Supabase
+  // Fetch stands from Supabase and request location
   useEffect(() => {
     fetchStands()
+    requestUserLocation()
   }, [])
 
   // Filter stands when state selection changes
@@ -337,6 +346,31 @@ export default function DirectoryPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('unavailable')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        })
+        setLocationStatus('granted')
+      },
+      (error) => {
+        console.warn("Geolocation error:", error)
+        setLocationStatus('denied')
+      },
+      {
+        timeout: 10000,
+        enableHighAccuracy: true
+      }
+    )
   }
 
   const clearFilters = () => {
