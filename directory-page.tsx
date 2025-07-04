@@ -166,29 +166,24 @@ function StandCard({ stand }: { stand: FirewoodStand }) {
     }
   }
 
-  const getCityState = (address: string) => {
+  const getFormattedAddress = (address: string) => {
     const parts = address.split(",").map(part => part.trim())
     
     if (parts.length >= 3) {
       // Format: "Street, City, State ZIP" 
+      const street = parts[0]
       const city = parts[1]
       const stateZip = parts[2].split(' ')
       const stateAbbr = stateZip[0]
       
-      // Convert state abbreviation to full state name
-      const fullStateName = Object.keys(STATE_ABBREVIATIONS).find((key) => STATE_ABBREVIATIONS[key] === stateAbbr)
-      
-      return `${city}, ${fullStateName || stateAbbr}`
+      return `${street}, ${city}, ${stateAbbr}`
     } else if (parts.length === 2) {
       // Format: "City, State" or "City, State ZIP"
       const city = parts[0]
       const stateZip = parts[1].split(' ')
       const stateAbbr = stateZip[0]
       
-      // Convert state abbreviation to full state name
-      const fullStateName = Object.keys(STATE_ABBREVIATIONS).find((key) => STATE_ABBREVIATIONS[key] === stateAbbr)
-      
-      return `${city}, ${fullStateName || stateAbbr}`
+      return `${city}, ${stateAbbr}`
     }
     
     return address
@@ -205,7 +200,7 @@ function StandCard({ stand }: { stand: FirewoodStand }) {
       {/* Location */}
       <div className="flex items-center gap-2 mb-3 text-[#5e4b3a]/80">
         <MapPin className="h-4 w-4 flex-shrink-0" />
-        <span className="text-sm">{getCityState(stand.address)}</span>
+        <span className="text-sm">{getFormattedAddress(stand.address)}</span>
         <span className="text-xs text-[#5e4b3a]/60 ml-auto">XX mi</span>
       </div>
 
