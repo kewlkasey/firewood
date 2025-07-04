@@ -312,30 +312,39 @@ export default function DirectoryPage() {
     requestUserLocation()
   }, [])
 
-  // Filter stands when state selection changes
+  // Filter stands based on selected state
   useEffect(() => {
-    if (selectedState === "") {
-      setFilteredStands(stands)
-    } else {
+    let filtered = stands
+
+    if (selectedState) {
       const stateAbbr = STATE_ABBREVIATIONS[selectedState]
-      const filtered = stands.filter((stand) => {
+      filtered = stands.filter((stand) => {
         const address = stand.address.toLowerCase()
-        const stateAbbr = STATE_ABBREVIATIONS[selectedState].toLowerCase()
-        const selectedStateLower = selectedState.toLowerCase()
-        
-        // Check for various address formats:
-        // "City, STATE ZIP" or "Street, City, STATE ZIP" or "City, STATE" or contains ", STATE "
-        return address.includes(`, ${stateAbbr} `) || 
-               address.includes(`, ${stateAbbr},`) ||
-               address.includes(` ${stateAbbr} `) ||
-               address.endsWith(`, ${stateAbbr}`) ||
-               address.includes(stateAbbr) || // Check for state abbreviation anywhere
-               address.includes(selectedStateLower) // Also check for full state name
+        const stateName = selectedState.toLowerCase()
+        const stateAbbrLower = stateAbbr.toLowerCase()
+
+        // More precise matching to avoid false positives
+        return address.includes(`, ${stateAbbrLower} `) || 
+               address.includes(`, ${stateAbbrLower},`) ||
+               address.endsWith(`, ${stateAbbrLower}`) ||
+               address.includes(` ${stateAbbrLower} `) ||
+               address.includes(stateName)
       })
-      console.log(`Filtering for ${selectedState} (${stateAbbr}): found ${filtered.length} stands`)
-      setFilteredStands(filtered)
     }
-  }, [selectedState, stands])
+
+    // Sort the filtered results
+    if (sortBy === 'distance') {
+      filtered = filtered.sort((a, b) => {
+        const distA = calculateDistance(userLocation.lat, userLocation.lng, a.latitude || 0, a.longitude || 0)
+        const distB = calculateDistance(userLocation.lat, userLocation.lng, b.latitude || 0, b.longitude || 0)
+        return distA - distB
+      })
+    } else {
+      filtered = filtered.sort((a, b) => a.stand_name.localeCompare(b.stand_name))
+    }
+
+    setFilteredStands(filtered)
+  }, [stands, selectedState, sortBy, userLocation])
 
   // Calculate state counts
   useEffect(() => {
