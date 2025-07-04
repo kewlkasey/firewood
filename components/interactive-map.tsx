@@ -57,8 +57,8 @@ export default function InteractiveMap() {
   // Update visible stands when location or stands change
   useEffect(() => {
     if (allStands.length > 0) {
-      const standsWithinRadius = filterStandsByRadius(allStands, userLocation, 25)
-      setVisibleStands(standsWithinRadius)
+      // Show all stands, not just those within radius
+      setVisibleStands(allStands)
     }
   }, [allStands, userLocation])
 
@@ -116,7 +116,7 @@ export default function InteractiveMap() {
 
         map.current = window.L.map(mapContainer.current, {
           center: [userLocation.lat, userLocation.lng],
-          zoom: 10,
+          zoom: 9, // Zoom level 9 shows roughly 25-30 mile radius
           zoomControl: true,
           attributionControl: true
         })
@@ -209,7 +209,7 @@ export default function InteractiveMap() {
 
         // Update map center
         if (map.current) {
-          map.current.setView([newLocation.lat, newLocation.lng], 10)
+          map.current.setView([newLocation.lat, newLocation.lng], 9)
         }
       },
       (error) => {
@@ -313,10 +313,8 @@ export default function InteractiveMap() {
         })
     })
 
-    // Fit map to show all markers if there are stands
-    if (visibleStands.length > 0) {
-      map.current.fitBounds(markersGroup.current.getBounds(), { padding: [20, 20] })
-    }
+    // Don't auto-fit bounds to preserve the initial zoom level showing ~25 mile radius
+    // Users can zoom out to see all stands if needed
   }
 
   const createPopupContent = (stand: FirewoodStand, distance: number) => {
@@ -427,7 +425,7 @@ export default function InteractiveMap() {
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-2">Find Firewood Stands</h2>
         <p className="text-lg text-[#5e4b3a]/80">
-          {visibleStands.length} stands within 25 miles of your location (approved & pending) • Click pins for details and directions
+          {visibleStands.length} stands nationwide (approved & pending) • Click pins for details and directions
         </p>
 
         {/* Location Status */}
