@@ -47,7 +47,7 @@ export default function InteractiveMap() {
           setTimeout(checkAndInitialize, 50)
         }
       }
-      
+
       checkAndInitialize()
       fetchStands()
       requestUserLocation()
@@ -76,9 +76,9 @@ export default function InteractiveMap() {
         console.log("Map already initialized, skipping...")
         return
       }
-      
+
       console.log("Starting map initialization...")
-      
+
       // Load Leaflet CSS
       if (!document.querySelector('link[href*="leaflet"]')) {
         console.log("Loading Leaflet CSS...")
@@ -113,7 +113,7 @@ export default function InteractiveMap() {
       if (mapContainer.current && !map.current && window.L) {
         console.log("Initializing map with location:", userLocation)
         console.log("Map container element:", mapContainer.current)
-        
+
         map.current = window.L.map(mapContainer.current, {
           center: [userLocation.lat, userLocation.lng],
           zoom: 10,
@@ -132,7 +132,7 @@ export default function InteractiveMap() {
 
         console.log("Map initialized successfully")
         setMapReady(true)
-        
+
         // Force map to resize to fill container
         setTimeout(() => {
           if (map.current) {
@@ -144,7 +144,7 @@ export default function InteractiveMap() {
         if (!mapContainer.current) missingRequirements.push("mapContainer")
         if (map.current) missingRequirements.push("mapAlreadyExists")
         if (!window.L) missingRequirements.push("leafletNotLoaded")
-        
+
         console.error("Map initialization failed - missing requirements:", missingRequirements.join(", "))
         console.error("Debug info:", {
           mapContainer: !!mapContainer.current,
@@ -427,7 +427,7 @@ export default function InteractiveMap() {
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-2">Find Firewood Stands</h2>
         <p className="text-lg text-[#5e4b3a]/80">
-          {visibleStands.length} stands within 25 miles • Click pins for details and directions
+          {visibleStands.length} stands within 25 miles of your location (approved & pending) • Click pins for details and directions
         </p>
 
         {/* Location Status */}
