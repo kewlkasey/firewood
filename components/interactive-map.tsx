@@ -1,7 +1,9 @@
+
 "use client"
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { RefreshCw, MapPin, Loader2 } from "lucide-react"
 import { supabase } from "../lib/supabase"
 
 interface FirewoodStand {
@@ -10,69 +12,55 @@ interface FirewoodStand {
   address: string
   latitude: number
   longitude: number
-  wood_types: string[]
-  price_range: string
   payment_methods: string[]
-  additional_details: string | null
-  onsite_person: boolean
   is_approved: boolean
+  average_rating?: number
+}
+
+const FALLBACK_LOCATION = {
+  lat: 42.6369,
+  lng: -82.7326,
+  address: "36300 Front St, New Baltimore, MI 48047"
 }
 
 export default function InteractiveMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
-  const [stands, setStands] = useState<FirewoodStand[]>([])
-  const [selectedStand, setSelectedStand] = useState<FirewoodStand | null>(null)
+  const markersGroup = useRef<any>(null)
+  
+  const [allStands, setAllStands] = useState<FirewoodStand[]>([])
+  const [visibleStands, setVisibleStands] = useState<FirewoodStand[]>([])
+  const [userLocation, setUserLocation] = useState(FALLBACK_LOCATION)
+  const [locationStatus, setLocationStatus] = useState<'fallback' | 'requesting' | 'granted' | 'denied'>('fallback')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mapReady, setMapReady] = useState(false)
 
-  // Fetch stands data
-  useEffect(() => {
-    fetchStands()
-  }, [])
-
-  // Initialize map when component mounts
+  // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      loadLeafletAndInitMap()
+      initializeMap()
+      fetchStands()
+      requestUserLocation()
     }
   }, [])
 
-  // Add markers when stands are loaded and map is ready
+  // Update visible stands when location or stands change
   useEffect(() => {
-    if (mapReady && stands.length > 0) {
-      addMarkersToMap()
+    if (allStands.length > 0) {
+      const standsWithinRadius = filterStandsByRadius(allStands, userLocation, 25)
+      setVisibleStands(standsWithinRadius)
     }
-  }, [stands, mapReady])
+  }, [allStands, userLocation])
 
-  const fetchStands = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data, error: fetchError } = await supabase
-        .from("firewood_stands")
-        .select("*")
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .neq("latitude", 0)
-        .neq("longitude", 0)
-
-      if (fetchError) {
-        throw fetchError
-      }
-
-      setStands(data || [])
-    } catch (err: any) {
-      console.error("Error fetching stands for map:", err)
-      setError("Failed to load firewood stand locations")
-    } finally {
-      setLoading(false)
+  // Update map markers when visible stands change
+  useEffect(() => {
+    if (mapReady && map.current && visibleStands.length > 0) {
+      updateMapMarkers()
     }
-  }
+  }, [visibleStands, mapReady])
 
-  const loadLeafletAndInitMap = async () => {
+  const initializeMap = async () => {
     try {
       // Load Leaflet CSS
       if (!document.querySelector('link[href*="leaflet"]')) {
@@ -93,15 +81,18 @@ export default function InteractiveMap() {
         })
       }
 
-      // Initialize map
+      // Initialize map with fallback location
       if (mapContainer.current && !map.current) {
-        map.current = window.L.map(mapContainer.current).setView([42.0, -89.0], 6)
+        map.current = window.L.map(mapContainer.current).setView([userLocation.lat, userLocation.lng], 10)
 
         // Add tile layer
         window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           maxZoom: 19,
         }).addTo(map.current)
+
+        // Initialize markers group
+        markersGroup.current = window.L.featureGroup().addTo(map.current)
 
         setMapReady(true)
       }
@@ -111,15 +102,116 @@ export default function InteractiveMap() {
     }
   }
 
-  const addMarkersToMap = () => {
-    if (!map.current || !window.L) return
+  const fetchStands = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-    // Calculate bounds to fit all markers
-    const group = new window.L.featureGroup()
+      const { data, error: fetchError } = await supabase
+        .from("firewood_stands")
+        .select("id, stand_name, address, latitude, longitude, payment_methods, is_approved")
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .neq("latitude", 0)
+        .neq("longitude", 0)
 
-    stands.forEach((stand) => {
-      // Create custom icon based on status
-      const iconColor = stand.is_approved ? "#2d5d2a" : "#5e4b3a"
+      if (fetchError) {
+        throw fetchError
+      }
+
+      setAllStands(data || [])
+    } catch (err: any) {
+      console.error("Error fetching stands:", err)
+      setError("Failed to load firewood stands")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const requestUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('denied')
+      return
+    }
+
+    setLocationStatus('requesting')
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const newLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          address: "Your location"
+        }
+        setUserLocation(newLocation)
+        setLocationStatus('granted')
+        
+        // Update map center
+        if (map.current) {
+          map.current.setView([newLocation.lat, newLocation.lng], 10)
+        }
+      },
+      (error) => {
+        console.warn("Geolocation error:", error)
+        setLocationStatus('denied')
+      },
+      {
+        timeout: 10000,
+        enableHighAccuracy: true
+      }
+    )
+  }
+
+  const filterStandsByRadius = (stands: FirewoodStand[], center: typeof userLocation, radiusMiles: number) => {
+    return stands.filter(stand => {
+      const distance = calculateDistance(center.lat, center.lng, stand.latitude, stand.longitude)
+      return distance <= radiusMiles
+    })
+  }
+
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 3959 // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
+  }
+
+  const updateMapMarkers = () => {
+    if (!map.current || !window.L || !markersGroup.current) return
+
+    // Clear existing markers
+    markersGroup.current.clearLayers()
+
+    // Add user location marker
+    const userIcon = window.L.divIcon({
+      html: `<div style="
+        background-color: #3b82f6;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      "></div>`,
+      className: "user-location-icon",
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    })
+
+    window.L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
+      .addTo(markersGroup.current)
+      .bindPopup(`<div style="text-align: center; font-weight: 600; color: #3b82f6;">📍 ${locationStatus === 'granted' ? 'Your Location' : 'Default Location'}</div>`)
+
+    // Add stand markers
+    visibleStands.forEach((stand) => {
+      const distance = calculateDistance(userLocation.lat, userLocation.lng, stand.latitude, stand.longitude)
+      
+      // Create custom icon based on approval status
+      const iconColor = stand.is_approved ? "#2d5d2a" : "#f59e0b"
       const customIcon = window.L.divIcon({
         html: `
           <div style="
@@ -149,29 +241,28 @@ export default function InteractiveMap() {
       })
 
       // Create popup content
-      const popupContent = createPopupContent(stand)
+      const popupContent = createPopupContent(stand, distance)
 
       // Create marker
-      const marker = window.L.marker([stand.latitude, stand.longitude], {
-        icon: customIcon,
-      })
-        .addTo(map.current)
+      window.L.marker([stand.latitude, stand.longitude], { icon: customIcon })
+        .addTo(markersGroup.current)
         .bindPopup(popupContent, {
           maxWidth: 300,
           className: "custom-popup",
         })
-
-      // Add to group for bounds calculation
-      group.addLayer(marker)
     })
 
-    // Fit map to show all markers
-    if (stands.length > 0) {
-      map.current.fitBounds(group.getBounds(), { padding: [20, 20] })
+    // Fit map to show all markers if there are stands
+    if (visibleStands.length > 0) {
+      map.current.fitBounds(markersGroup.current.getBounds(), { padding: [20, 20] })
     }
   }
 
-  const createPopupContent = (stand: FirewoodStand) => {
+  const createPopupContent = (stand: FirewoodStand, distance: number) => {
+    const statusBadge = stand.is_approved
+      ? `<span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">✓ Active</span>`
+      : `<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">⏰ Pending</span>`
+
     const getCityState = (address: string) => {
       const parts = address.split(",")
       if (parts.length >= 2) {
@@ -186,26 +277,21 @@ export default function InteractiveMap() {
       return `https://www.google.com/maps/dir/?api=1&destination=${stand.latitude},${stand.longitude}`
     }
 
-    const statusBadge = stand.is_approved
-      ? `<span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">✓ Active</span>`
-      : `<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">⏰ Pending</span>`
-
-    const woodTypes = stand.wood_types
-      .slice(0, 3)
-      .map(
-        (type) =>
-          `<span style="background: #f5f1e8; color: #5e4b3a; padding: 2px 6px; border-radius: 8px; font-size: 11px; margin-right: 4px;">${type}</span>`,
-      )
-      .join("")
-
-    const moreTypes =
-      stand.wood_types.length > 3
-        ? `<span style="color: #6b7280; font-size: 11px;">+${stand.wood_types.length - 3} more</span>`
-        : ""
-
-    const ownerAvailable = stand.onsite_person
-      ? `<div style="background: #dbeafe; color: #2563eb; padding: 4px 8px; border-radius: 8px; font-size: 11px; margin: 8px 0; display: inline-block;">Owner Usually Available</div>`
-      : ""
+    const getPaymentIcons = (methods: string[]) => {
+      const iconMap: { [key: string]: string } = {
+        'Cash': '💵',
+        'Venmo': '📱', 
+        'PayPal': '💳',
+        'Zelle': '⚡',
+        'Credit Card': '💳',
+        'Check': '📄'
+      }
+      
+      return methods.map(method => {
+        const icon = iconMap[method] || '💳'
+        return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px;">${icon} ${method}</span>`
+      }).join('')
+    }
 
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">
@@ -214,16 +300,12 @@ export default function InteractiveMap() {
           ${statusBadge}
         </div>
         
-        <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
-        
-        <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: #2d5d2a;">${stand.price_range}</p>
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
+        <p style="margin: 0 0 8px 0; font-size: 12px; color: #2d5d2a; font-weight: 600;">${distance.toFixed(1)} miles away</p>
         
         <div style="margin-bottom: 8px;">
-          ${woodTypes}
-          ${moreTypes}
+          ${getPaymentIcons(stand.payment_methods)}
         </div>
-        
-        ${ownerAvailable}
         
         <a href="${getDirectionsUrl(stand)}" target="_blank" rel="noopener noreferrer" 
            style="
@@ -246,12 +328,17 @@ export default function InteractiveMap() {
     `
   }
 
-  if (loading) {
+  const handleRefresh = () => {
+    fetchStands()
+    requestUserLocation()
+  }
+
+  if (loading && allStands.length === 0) {
     return (
       <div className="w-full h-[400px] md:h-[500px] bg-gray-100 rounded-lg flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2d5d2a] mx-auto mb-2"></div>
-          <p className="text-[#5e4b3a]">Loading map...</p>
+          <Loader2 className="animate-spin h-8 w-8 text-[#2d5d2a] mx-auto mb-2" />
+          <p className="text-[#5e4b3a]">Loading map and firewood stands...</p>
         </div>
       </div>
     )
@@ -262,14 +349,11 @@ export default function InteractiveMap() {
       <div className="w-full h-[400px] md:h-[500px] bg-gray-100 rounded-lg flex flex-col items-center justify-center gap-4">
         <p className="text-red-600">{error}</p>
         <Button
-          onClick={() => {
-            setError(null)
-            fetchStands()
-            loadLeafletAndInitMap()
-          }}
+          onClick={handleRefresh}
           variant="outline"
           className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10 bg-transparent"
         >
+          <RefreshCw className="mr-2 h-4 w-4" />
           Try Again
         </Button>
       </div>
@@ -278,25 +362,65 @@ export default function InteractiveMap() {
 
   return (
     <div className="w-full space-y-4">
+      {/* Header */}
       <div className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-2">Find Firewood Stands</h2>
         <p className="text-lg text-[#5e4b3a]/80">
-          {stands.length} stands available • Click pins for details and directions
+          {visibleStands.length} stands within 25 miles • Click pins for details and directions
         </p>
+        
+        {/* Location Status */}
+        <div className="flex items-center justify-center gap-2 mt-2 text-sm">
+          <MapPin className="h-4 w-4 text-[#2d5d2a]" />
+          {locationStatus === 'requesting' && (
+            <span className="text-[#5e4b3a]">
+              <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
+              Getting your location...
+            </span>
+          )}
+          {locationStatus === 'granted' && (
+            <span className="text-[#2d5d2a]">Using your current location</span>
+          )}
+          {locationStatus === 'denied' && (
+            <span className="text-[#5e4b3a]">Using default location (New Baltimore, MI)</span>
+          )}
+          {locationStatus === 'fallback' && (
+            <span className="text-[#5e4b3a]">Loading from New Baltimore, MI</span>
+          )}
+        </div>
       </div>
 
+      {/* Controls */}
+      <div className="flex justify-center">
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
+          className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10 bg-transparent"
+          disabled={loading}
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Map */}
       <div className="w-full h-[400px] md:h-[500px] rounded-lg overflow-hidden shadow-lg border border-gray-200">
         <div ref={mapContainer} className="w-full h-full" />
       </div>
 
-      <div className="flex justify-center gap-4 text-sm">
+      {/* Legend */}
+      <div className="flex justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-[#2d5d2a] rounded-full"></div>
           <span className="text-[#5e4b3a]">Active Stands</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-[#5e4b3a] rounded-full"></div>
+          <div className="w-4 h-4 bg-[#f59e0b] rounded-full"></div>
           <span className="text-[#5e4b3a]">Pending Approval</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-[#3b82f6] rounded-full"></div>
+          <span className="text-[#5e4b3a]">Your Location</span>
         </div>
       </div>
     </div>
