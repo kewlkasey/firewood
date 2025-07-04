@@ -67,6 +67,42 @@ export default function Page() {
           </div>
         </section>
 
+        {/* How It Works Section */}
+        <section className="py-16 md:py-24 bg-[#f5f1e8]">
+          <div className="container">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-[#5e4b3a] mb-12">How It Works</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-2">
+                  <MapPin className="h-8 w-8 text-[#2d5d2a]" />
+                </div>
+                <h3 className="text-xl font-semibold text-[#5e4b3a]">Enable Your Location</h3>
+                <p className="text-[#5e4b3a]/80">
+                  Allow location sharing to find firewood stands near you automatically, or manually search by address to discover stands in your area.
+                </p>
+              </div>
+              <Link href="/directory" className="flex flex-col items-center text-center space-y-4 hover:bg-white/50 rounded-lg p-4 transition-colors">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-2">
+                  <Truck className="h-8 w-8 text-[#2d5d2a]" />
+                </div>
+                <h3 className="text-xl font-semibold text-[#5e4b3a]">Find Nearby Stands</h3>
+                <p className="text-[#5e4b3a]/80">
+                  Browse through available stands, view photos, read reviews, and get directions to your chosen location.
+                </p>
+              </Link>
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-2">
+                  <Wallet className="h-8 w-8 text-[#2d5d2a]" />
+                </div>
+                <h3 className="text-xl font-semibold text-[#5e4b3a]">Visit & Pay</h3>
+                <p className="text-[#5e4b3a]/80">
+                  Visit the stand, select your firewood, and pay using the honor system. Support local suppliers directly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Hero Section */}
         <section className="relative py-20 md:py-28 bg-gradient-to-b from-[#f5f1e8] to-white">
           <div className="container flex flex-col md:flex-row items-center gap-8 md:gap-16">
@@ -109,43 +145,7 @@ export default function Page() {
           </div>
         </section>
 
-        {/* How It Works Section */}
-        <section className="py-16 md:py-24 bg-white">
-          <div className="container">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-[#5e4b3a] mb-12">How It Works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[#f5f1e8] flex items-center justify-center mb-2">
-                  <MapPin className="h-8 w-8 text-[#2d5d2a]" />
-                </div>
-                <h3 className="text-xl font-semibold text-[#5e4b3a]">Search Your Location</h3>
-                <p className="text-[#5e4b3a]/80">
-                  Enter your location to find firewood stands near you. Filter by distance, wood type, or price.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[#f5f1e8] flex items-center justify-center mb-2">
-                  <Truck className="h-8 w-8 text-[#2d5d2a]" />
-                </div>
-                <h3 className="text-xl font-semibold text-[#5e4b3a]">Find Nearby Stands</h3>
-                <p className="text-[#5e4b3a]/80">
-                  Browse through available stands, view photos, read reviews, and get directions to your chosen
-                  location.
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-[#f5f1e8] flex items-center justify-center mb-2">
-                  <Wallet className="h-8 w-8 text-[#2d5d2a]" />
-                </div>
-                <h3 className="text-xl font-semibold text-[#5e4b3a]">Visit & Pay</h3>
-                <p className="text-[#5e4b3a]/80">
-                  Visit the stand, select your firewood, and pay using the honor system. Support local suppliers
-                  directly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        
 
         {/* For Stand Owners Section */}
         <section className="py-16 md:py-24 bg-[#f5f1e8]">
