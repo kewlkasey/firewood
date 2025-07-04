@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -27,7 +26,7 @@ export default function InteractiveMap() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const markersGroup = useRef<any>(null)
-  
+
   const [allStands, setAllStands] = useState<FirewoodStand[]>([])
   const [visibleStands, setVisibleStands] = useState<FirewoodStand[]>([])
   const [userLocation, setUserLocation] = useState(FALLBACK_LOCATION)
@@ -145,7 +144,7 @@ export default function InteractiveMap() {
         }
         setUserLocation(newLocation)
         setLocationStatus('granted')
-        
+
         // Update map center
         if (map.current) {
           map.current.setView([newLocation.lat, newLocation.lng], 10)
@@ -209,7 +208,7 @@ export default function InteractiveMap() {
     // Add stand markers
     visibleStands.forEach((stand) => {
       const distance = calculateDistance(userLocation.lat, userLocation.lng, stand.latitude, stand.longitude)
-      
+
       // Create custom icon based on approval status
       const iconColor = stand.is_approved ? "#2d5d2a" : "#f59e0b"
       const customIcon = window.L.divIcon({
@@ -286,7 +285,7 @@ export default function InteractiveMap() {
         'Credit Card': '💳',
         'Check': '📄'
       }
-      
+
       return methods.map(method => {
         const icon = iconMap[method] || '💳'
         return `<span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px;">${icon} ${method}</span>`
@@ -299,14 +298,14 @@ export default function InteractiveMap() {
           <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2; max-width: 180px;">${stand.stand_name}</h3>
           ${statusBadge}
         </div>
-        
+
         <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
         <p style="margin: 0 0 8px 0; font-size: 12px; color: #2d5d2a; font-weight: 600;">${distance.toFixed(1)} miles away</p>
-        
+
         <div style="margin-bottom: 8px;">
           ${getPaymentIcons(stand.payment_methods)}
         </div>
-        
+
         <a href="${getDirectionsUrl(stand)}" target="_blank" rel="noopener noreferrer" 
            style="
              display: inline-block;
@@ -368,7 +367,7 @@ export default function InteractiveMap() {
         <p className="text-lg text-[#5e4b3a]/80">
           {visibleStands.length} stands within 25 miles • Click pins for details and directions
         </p>
-        
+
         {/* Location Status */}
         <div className="flex items-center justify-center gap-2 mt-2 text-sm">
           <MapPin className="h-4 w-4 text-[#2d5d2a]" />
