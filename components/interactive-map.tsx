@@ -38,15 +38,19 @@ export default function InteractiveMap() {
   // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Wait for the component to fully render before initializing map
-      const timer = setTimeout(() => {
-        initializeMap()
-      }, 100)
+      // Wait for the DOM element to be available
+      const checkAndInitialize = () => {
+        if (mapContainer.current) {
+          initializeMap()
+        } else {
+          // If the element is not ready, try again after a short delay
+          setTimeout(checkAndInitialize, 50)
+        }
+      }
       
+      checkAndInitialize()
       fetchStands()
       requestUserLocation()
-      
-      return () => clearTimeout(timer)
     }
   }, [])
 
@@ -108,6 +112,7 @@ export default function InteractiveMap() {
       // Initialize map with fallback location
       if (mapContainer.current && !map.current && window.L) {
         console.log("Initializing map with location:", userLocation)
+        console.log("Map container element:", mapContainer.current)
         
         map.current = window.L.map(mapContainer.current, {
           center: [userLocation.lat, userLocation.lng],
@@ -134,6 +139,11 @@ export default function InteractiveMap() {
         if (!window.L) missingRequirements.push("leafletNotLoaded")
         
         console.error("Map initialization failed - missing requirements:", missingRequirements.join(", "))
+        console.error("Debug info:", {
+          mapContainer: !!mapContainer.current,
+          mapExists: !!map.current,
+          leafletLoaded: !!window.L
+        })
         setError("Failed to initialize map - missing requirements: " + missingRequirements.join(", "))
       }
     } catch (error) {
