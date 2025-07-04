@@ -340,7 +340,7 @@ export default function InteractiveMap() {
       const iconMap: { [key: string]: string } = {
         'Cash': '💵',
         'Venmo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#3D95CE"/><path d="M18.5 4.5c1.2 1.8 1.8 3.9 1.8 6.3 0 4.8-2.4 9.6-6.6 13.2h-4.2L6.6 7.2h3.9l1.8 11.4c2.1-2.1 3.6-5.1 3.6-8.1 0-1.5-.3-2.7-.9-3.9h3.5z" fill="white"/></svg>', 
-        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial">P</text></svg>',
+        'PayPal': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display: inline-block; vertical-align: middle;"><rect width="24" height="24" rx="4" fill="#0070BA"/><text x="12" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold" font-family="Arial">P</text></svg>',
         'Zelle': '⚡',
         'Credit Card': '💳',
         'Check': '📄'

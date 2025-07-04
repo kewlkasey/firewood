@@ -149,7 +149,7 @@ const getPaymentIcon = (method: string) => {
   if (lowerMethod.includes("paypal")) return (
     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
       <rect width="24" height="24" rx="4" fill="#0070BA"/>
-      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">P</text>
+      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">P</text>
     </svg>
   )
   if (lowerMethod.includes("zelle")) return <Zap className="h-4 w-4 text-purple-600" />
@@ -534,7 +534,7 @@ export default function DirectoryPage() {
             <div className="flex items-center gap-1">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                 <rect width="24" height="24" rx="4" fill="#0070BA"/>
-                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold" fontFamily="Arial">P</text>
+                <text x="12" y="16" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="Arial">P</text>
               </svg>
               <span>PayPal</span>
             </div>
