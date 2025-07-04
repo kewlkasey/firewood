@@ -96,7 +96,7 @@ const STATE_ABBREVIATIONS: { [key: string]: string } = {
   Delaware: "DE",
   Florida: "FL",
   Georgia: "GA",
-  Hawaii: "HI",
+  "Hawaii": "HI",
   Idaho: "ID",
   Illinois: "IL",
   Indiana: "IN",
@@ -188,24 +188,24 @@ function StandCard({
 
   const getFormattedAddress = (address: string) => {
     const parts = address.split(",").map(part => part.trim())
-    
+
     if (parts.length >= 3) {
       // Format: "Street, City, State ZIP" 
       const street = parts[0]
       const city = parts[1]
       const stateZip = parts[2].split(' ')
       const stateAbbr = stateZip[0]
-      
+
       return `${street}, ${city}, ${stateAbbr}`
     } else if (parts.length === 2) {
       // Format: "City, State" or "City, State ZIP"
       const city = parts[0]
       const stateZip = parts[1].split(' ')
       const stateAbbr = stateZip[0]
-      
+
       return `${city}, ${stateAbbr}`
     }
-    
+
     return address
   }
 
@@ -222,12 +222,15 @@ function StandCard({
         <MapPin className="h-4 w-4 flex-shrink-0" />
         <span className="text-sm">{getFormattedAddress(stand.address)}</span>
         <span 
-          className="text-xs text-[#5e4b3a]/60 ml-auto cursor-help"
+          className={`text-xs text-[#5e4b3a]/60 ml-auto ${locationStatus !== 'granted' ? 'cursor-help' : ''}`}
           title={locationStatus !== 'granted' ? 'Enable location sharing for accurate distance' : undefined}
         >
-          {stand.latitude && stand.longitude ? 
-            `${calculateDistance(userLocation.lat, userLocation.lng, stand.latitude, stand.longitude).toFixed(1)} mi` : 
-            'N/A mi'
+          {locationStatus !== 'granted' ? 
+            'XX mi' : 
+            (stand.latitude && stand.longitude ? 
+              `${calculateDistance(userLocation.lat, userLocation.lng, stand.latitude, stand.longitude).toFixed(1)} mi` : 
+              'N/A mi'
+            )
           }
         </span>
       </div>
