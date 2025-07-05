@@ -111,17 +111,10 @@ export default function StandPage() {
       setLoading(true)
       setError(null)
 
-      // Fetch stand details with owner information
+      // Fetch stand details
       const { data: standData, error: standError } = await supabase
         .from("firewood_stands")
-        .select(`
-          *,
-          profiles:submitted_by_user_id (
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select("*")
         .eq("id", standId)
         .single()
 
@@ -133,19 +126,24 @@ export default function StandPage() {
         throw new Error("Stand not found")
       }
 
+      // Fetch owner profile separately
+      let ownerProfile = null
+      if (standData.submitted_by_user_id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, email")
+          .eq("id", standData.submitted_by_user_id)
+          .single()
+
+        if (!profileError && profileData) {
+          ownerProfile = profileData
+        }
+      }
+
       // Fetch verification data
       const { data: verificationData, error: verificationError } = await supabase
         .from("stand_verifications")
-        .select(`
-          id,
-          verified_at,
-          user_id,
-          profiles:user_id (
-            id,
-            first_name,
-            last_name
-          )
-        `)
+        .select("id, verified_at, user_id")
         .eq("stand_id", standId)
         .order("verified_at", { ascending: false })
 
@@ -153,25 +151,49 @@ export default function StandPage() {
         console.error("Error fetching verifications:", verificationError)
       }
 
-      // Process verification data - exclude self-verifications for the "verified" status
+      // Fetch profiles for verifiers separately
       const allVerifications = verificationData || []
+      const recentVerifiers = []
+      
+      if (allVerifications.length > 0) {
+        const userIds = allVerifications.slice(0, 10).map(v => v.user_id)
+        const { data: verifierProfiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", userIds)
+
+        const profileMap = new Map()
+        if (verifierProfiles) {
+          verifierProfiles.forEach(profile => {
+            profileMap.set(profile.id, profile)
+          })
+        }
+
+        allVerifications.slice(0, 10).forEach(verification => {
+          const profile = profileMap.get(verification.user_id)
+          if (profile) {
+            recentVerifiers.push({
+              id: profile.id,
+              first_name: profile.first_name,
+              last_name: profile.last_name,
+              verified_at: verification.verified_at,
+              is_submitter: verification.user_id === standData.submitted_by_user_id
+            })
+          }
+        })
+      }
+
+      // Process verification data - exclude self-verifications for the "verified" status
       const nonSubmitterVerifications = allVerifications.filter(v => v.user_id !== standData.submitted_by_user_id)
       
       const verificationCount = allVerifications.length
       const nonSubmitterVerificationCount = nonSubmitterVerifications.length
-      const recentVerifiers = allVerifications.slice(0, 10).map(v => ({
-        id: v.profiles.id,
-        first_name: v.profiles.first_name,
-        last_name: v.profiles.last_name,
-        verified_at: v.verified_at,
-        is_submitter: v.user_id === standData.submitted_by_user_id
-      }))
 
       // Combine data
       const standDetails: StandDetails = {
         ...standData,
-        owner_name: standData.profiles ? `${standData.profiles.first_name} ${standData.profiles.last_name}` : "Unknown",
-        owner_email: standData.profiles?.email || "",
+        owner_name: ownerProfile ? `${ownerProfile.first_name} ${ownerProfile.last_name}` : "Unknown",
+        owner_email: ownerProfile?.email || "",
         verification_count: verificationCount,
         recent_verifiers: recentVerifiers,
         is_verified_by_community: nonSubmitterVerificationCount > 0
