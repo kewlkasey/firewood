@@ -61,7 +61,9 @@ interface StandDetails {
     first_name: string
     last_name: string
     verified_at: string
+    is_submitter?: boolean
   }>
+  is_verified_by_community: boolean
 }
 
 interface VerificationFormData {
@@ -137,6 +139,7 @@ export default function StandPage() {
         .select(`
           id,
           verified_at,
+          user_id,
           profiles:user_id (
             id,
             first_name,
@@ -150,14 +153,19 @@ export default function StandPage() {
         console.error("Error fetching verifications:", verificationError)
       }
 
-      // Process verification data
-      const verificationCount = verificationData?.length || 0
-      const recentVerifiers = verificationData?.slice(0, 10).map(v => ({
+      // Process verification data - exclude self-verifications for the "verified" status
+      const allVerifications = verificationData || []
+      const nonSubmitterVerifications = allVerifications.filter(v => v.user_id !== standData.submitted_by_user_id)
+      
+      const verificationCount = allVerifications.length
+      const nonSubmitterVerificationCount = nonSubmitterVerifications.length
+      const recentVerifiers = allVerifications.slice(0, 10).map(v => ({
         id: v.profiles.id,
         first_name: v.profiles.first_name,
         last_name: v.profiles.last_name,
-        verified_at: v.verified_at
-      })) || []
+        verified_at: v.verified_at,
+        is_submitter: v.user_id === standData.submitted_by_user_id
+      }))
 
       // Combine data
       const standDetails: StandDetails = {
@@ -165,7 +173,8 @@ export default function StandPage() {
         owner_name: standData.profiles ? `${standData.profiles.first_name} ${standData.profiles.last_name}` : "Unknown",
         owner_email: standData.profiles?.email || "",
         verification_count: verificationCount,
-        recent_verifiers: recentVerifiers
+        recent_verifiers: recentVerifiers,
+        is_verified_by_community: nonSubmitterVerificationCount > 0
       }
 
       setStand(standDetails)
@@ -265,12 +274,6 @@ export default function StandPage() {
 
       if (existingVerification && existingVerification.length > 0) {
         alert("You have already verified this stand today. Please try again tomorrow.")
-        return
-      }
-
-      // Check if user is trying to verify their own stand
-      if (stand.submitted_by_user_id === user.id) {
-        alert("You cannot verify your own stand.")
         return
       }
 
@@ -394,6 +397,12 @@ export default function StandPage() {
                   Pending Approval
                 </Badge>
               )}
+              {stand.is_verified_by_community && (
+                <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -402,32 +411,49 @@ export default function StandPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Photo Gallery */}
-            {(stand.photo_url || (stand.photo_urls && stand.photo_urls.length > 0)) && (
+            {(stand.photo_urls && stand.photo_urls.length > 0) || stand.photo_url ? (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-[#5e4b3a]">Photos</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {stand.photo_url && (
-                      <img
-                        src={stand.photo_url}
-                        alt={stand.stand_name}
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                      />
+                    {/* Prioritize photo_urls array */}
+                    {stand.photo_urls && stand.photo_urls.length > 0 ? (
+                      stand.photo_urls.map((url, index) => {
+                        // Handle Supabase Storage URLs
+                        const imageUrl = url.startsWith('http') ? url : 
+                          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
+                        return (
+                          <img
+                            key={index}
+                            src={imageUrl}
+                            alt={`${stand.stand_name} - Photo ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        )
+                      })
+                    ) : (
+                      /* Fallback to single photo_url if photo_urls is empty */
+                      stand.photo_url && (
+                        <img
+                          src={stand.photo_url.startsWith('http') ? stand.photo_url : 
+                            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${stand.photo_url}`}
+                          alt={stand.stand_name}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      )
                     )}
-                    {stand.photo_urls?.map((url, index) => (
-                      <img
-                        key={index}
-                        src={url}
-                        alt={`${stand.stand_name} - Photo ${index + 1}`}
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                      />
-                    ))}
                   </div>
                 </CardContent>
               </Card>
-            )}
+            ) : null}
 
             {/* Stand Details */}
             <Card>
@@ -602,8 +628,13 @@ export default function StandPage() {
                       <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
                         <div className="font-medium mb-1">Recent verifiers:</div>
                         {stand.recent_verifiers.map((verifier, index) => (
-                          <div key={verifier.id}>
-                            {verifier.first_name} {verifier.last_name}
+                          <div key={verifier.id} className="flex items-center gap-1">
+                            <span>{verifier.first_name} {verifier.last_name}</span>
+                            {verifier.is_submitter && (
+                              <Badge variant="outline" className="text-xs py-0 px-1">
+                                Owner
+                              </Badge>
+                            )}
                           </div>
                         ))}
                       </div>
