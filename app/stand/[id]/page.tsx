@@ -1,0 +1,689 @@
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams, useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { 
+  MapPin, 
+  Clock, 
+  DollarSign, 
+  Truck, 
+  Phone, 
+  CheckCircle, 
+  ArrowLeft,
+  Calendar,
+  User,
+  Shield,
+  Star,
+  AlertCircle,
+  Loader2
+} from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { getCurrentUser } from "@/lib/auth"
+
+interface StandDetails {
+  id: string
+  stand_name: string
+  address: string
+  latitude: number | null
+  longitude: number | null
+  wood_types: string[]
+  price_range: string
+  payment_methods: string[]
+  additional_details: string | null
+  photo_url: string | null
+  photo_urls: string[] | null
+  onsite_person: boolean
+  is_approved: boolean
+  bundled_flag: boolean
+  loose_flag: boolean
+  self_serve: boolean
+  payment_type: string | null
+  location_type: string | null
+  hours_availability: string | null
+  seasonal_availability: string | null
+  contact_phone: string | null
+  delivery_available: boolean
+  submitted_by_user_id: string
+  last_verified_date: string | null
+  created_at: string
+  updated_at: string
+  owner_name: string
+  owner_email: string
+  verification_count: number
+  recent_verifiers: Array<{
+    id: string
+    first_name: string
+    last_name: string
+    verified_at: string
+  }>
+}
+
+interface VerificationFormData {
+  notes: string
+}
+
+export default function StandPage() {
+  const params = useParams()
+  const router = useRouter()
+  const standId = params?.id as string
+
+  const [stand, setStand] = useState<StandDetails | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [submittingVerification, setSubmittingVerification] = useState(false)
+  const [verificationForm, setVerificationForm] = useState<VerificationFormData>({ notes: "" })
+  const [mapReady, setMapReady] = useState(false)
+  const [showVerifierNames, setShowVerifierNames] = useState(false)
+
+  useEffect(() => {
+    if (standId) {
+      fetchStandDetails()
+      fetchCurrentUser()
+    }
+  }, [standId])
+
+  useEffect(() => {
+    if (stand?.latitude && stand?.longitude) {
+      initializeMap()
+    }
+  }, [stand])
+
+  const fetchCurrentUser = async () => {
+    try {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+    } catch (error) {
+      console.error("Error fetching user:", error)
+    }
+  }
+
+  const fetchStandDetails = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Fetch stand details with owner information
+      const { data: standData, error: standError } = await supabase
+        .from("firewood_stands")
+        .select(`
+          *,
+          profiles:user_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq("id", standId)
+        .single()
+
+      if (standError) {
+        throw standError
+      }
+
+      if (!standData) {
+        throw new Error("Stand not found")
+      }
+
+      // Fetch verification data
+      const { data: verificationData, error: verificationError } = await supabase
+        .from("stand_verifications")
+        .select(`
+          id,
+          verified_at,
+          profiles:user_id (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq("stand_id", standId)
+        .order("verified_at", { ascending: false })
+
+      if (verificationError) {
+        console.error("Error fetching verifications:", verificationError)
+      }
+
+      // Process verification data
+      const verificationCount = verificationData?.length || 0
+      const recentVerifiers = verificationData?.slice(0, 10).map(v => ({
+        id: v.profiles.id,
+        first_name: v.profiles.first_name,
+        last_name: v.profiles.last_name,
+        verified_at: v.verified_at
+      })) || []
+
+      // Combine data
+      const standDetails: StandDetails = {
+        ...standData,
+        owner_name: standData.profiles ? `${standData.profiles.first_name} ${standData.profiles.last_name}` : "Unknown",
+        owner_email: standData.profiles?.email || "",
+        verification_count: verificationCount,
+        recent_verifiers: recentVerifiers
+      }
+
+      setStand(standDetails)
+    } catch (error: any) {
+      console.error("Error fetching stand details:", error)
+      setError(error.message || "Failed to load stand details")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const initializeMap = async () => {
+    if (!stand?.latitude || !stand?.longitude) return
+
+    try {
+      // Load Leaflet if not already loaded
+      if (!window.L) {
+        const link = document.createElement("link")
+        link.rel = "stylesheet"
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        document.head.appendChild(link)
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          script.onload = () => resolve(null)
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+      }
+
+      // Wait for DOM element
+      const mapContainer = document.getElementById("stand-map")
+      if (!mapContainer) return
+
+      // Initialize map
+      const map = window.L.map(mapContainer).setView([stand.latitude, stand.longitude], 15)
+
+      // Add tile layer
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map)
+
+      // Add marker
+      const customIcon = window.L.divIcon({
+        html: `
+          <div style="
+            background-color: #2d5d2a;
+            width: 24px;
+            height: 24px;
+            border-radius: 50% 50% 50% 0;
+            border: 3px solid white;
+            transform: rotate(-45deg);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          ">
+            <div style="
+              width: 10px;
+              height: 10px;
+              background-color: white;
+              border-radius: 50%;
+              position: absolute;
+              top: 4px;
+              left: 4px;
+            "></div>
+          </div>
+        `,
+        className: "custom-div-icon",
+        iconSize: [24, 24],
+        iconAnchor: [12, 24]
+      })
+
+      window.L.marker([stand.latitude, stand.longitude], { icon: customIcon })
+        .addTo(map)
+        .bindPopup(stand.stand_name)
+
+      setMapReady(true)
+    } catch (error) {
+      console.error("Error initializing map:", error)
+    }
+  }
+
+  const handleVerificationSubmit = async () => {
+    if (!user || !stand) return
+
+    try {
+      setSubmittingVerification(true)
+
+      // Check if user already verified today
+      const today = new Date().toISOString().split('T')[0]
+      const { data: existingVerification } = await supabase
+        .from("stand_verifications")
+        .select("id")
+        .eq("stand_id", stand.id)
+        .eq("user_id", user.id)
+        .gte("verified_at", today)
+        .lt("verified_at", new Date(Date.now() + 86400000).toISOString().split('T')[0])
+
+      if (existingVerification && existingVerification.length > 0) {
+        alert("You have already verified this stand today. Please try again tomorrow.")
+        return
+      }
+
+      // Check if user is trying to verify their own stand
+      if (stand.submitted_by_user_id === user.id) {
+        alert("You cannot verify your own stand.")
+        return
+      }
+
+      // Submit verification
+      const { error } = await supabase
+        .from("stand_verifications")
+        .insert({
+          stand_id: stand.id,
+          user_id: user.id,
+          verification_notes: verificationForm.notes.trim() || null
+        })
+
+      if (error) {
+        throw error
+      }
+
+      // Update last_verified_date on stand
+      await supabase
+        .from("firewood_stands")
+        .update({ last_verified_date: new Date().toISOString() })
+        .eq("id", stand.id)
+
+      // Refresh stand data
+      await fetchStandDetails()
+      setVerificationForm({ notes: "" })
+      alert("Thank you for verifying this stand!")
+    } catch (error: any) {
+      console.error("Error submitting verification:", error)
+      alert("Failed to submit verification. Please try again.")
+    } finally {
+      setSubmittingVerification(false)
+    }
+  }
+
+  const getPaymentIcon = (method: string) => {
+    const lowerMethod = method.toLowerCase()
+    if (lowerMethod.includes("venmo")) return "💳"
+    if (lowerMethod.includes("paypal")) return "💰"
+    if (lowerMethod.includes("zelle")) return "⚡"
+    if (lowerMethod.includes("cash")) return "💵"
+    return "💳"
+  }
+
+  const formatPhoneNumber = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, "")
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`
+    }
+    return phone
+  }
+
+  const getDirectionsUrl = () => {
+    if (!stand?.latitude || !stand?.longitude) return "#"
+    return `https://www.google.com/maps/dir/?api=1&destination=${stand.latitude},${stand.longitude}`
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f1e8] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-8 w-8 text-[#2d5d2a] mx-auto mb-4" />
+          <p className="text-[#5e4b3a]">Loading stand details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !stand) {
+    return (
+      <div className="min-h-screen bg-[#f5f1e8] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-[#5e4b3a] mb-2">Stand Not Found</h1>
+          <p className="text-[#5e4b3a]/80 mb-6">{error || "The requested stand could not be found."}</p>
+          <Button
+            onClick={() => router.push("/directory")}
+            className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Directory
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f5f1e8]">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/directory")}
+            className="mb-4 border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Directory
+          </Button>
+
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-2">
+                {stand.stand_name}
+              </h1>
+              <div className="flex items-center gap-2 text-[#5e4b3a]/80">
+                <MapPin className="h-5 w-5" />
+                <span>{stand.address}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {stand.is_approved ? (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Active Stand
+                </Badge>
+              ) : (
+                <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Pending Approval
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Photo Gallery */}
+            {(stand.photo_url || (stand.photo_urls && stand.photo_urls.length > 0)) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-[#5e4b3a]">Photos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {stand.photo_url && (
+                      <img
+                        src={stand.photo_url}
+                        alt={stand.stand_name}
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                      />
+                    )}
+                    {stand.photo_urls?.map((url, index) => (
+                      <img
+                        key={index}
+                        src={url}
+                        alt={`${stand.stand_name} - Photo ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Stand Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[#5e4b3a]">Stand Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Wood Types */}
+                <div>
+                  <h3 className="font-semibold text-[#5e4b3a] mb-2">Available Wood Types</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {stand.wood_types.map((type, index) => (
+                      <Badge key={index} variant="secondary" className="bg-[#f5f1e8] text-[#5e4b3a] border border-[#2d5d2a]/20">
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Price & Payment */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2 flex items-center">
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      Price Range
+                    </h3>
+                    <p className="text-[#2d5d2a] font-medium">{stand.price_range}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Payment Methods</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {stand.payment_methods.map((method, index) => (
+                        <span key={index} className="inline-flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded">
+                          <span>{getPaymentIcon(method)}</span>
+                          {method}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Wood Format & Service */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Wood Format</h3>
+                    <div className="space-y-1">
+                      {stand.bundled_flag && <Badge variant="outline">📦 Bundled Wood</Badge>}
+                      {stand.loose_flag && <Badge variant="outline">🪵 Loose Wood</Badge>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Service Type</h3>
+                    <div className="space-y-1">
+                      {stand.self_serve && <Badge variant="outline">🛒 Self-Serve</Badge>}
+                      {stand.onsite_person && <Badge variant="outline">👤 Owner Available</Badge>}
+                      {stand.delivery_available && (
+                        <Badge variant="outline">
+                          <Truck className="h-3 w-3 mr-1" />
+                          Delivery Available
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hours & Availability */}
+                {(stand.hours_availability || stand.seasonal_availability) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {stand.hours_availability && (
+                      <div>
+                        <h3 className="font-semibold text-[#5e4b3a] mb-2 flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          Hours
+                        </h3>
+                        <p className="text-[#5e4b3a]/80">{stand.hours_availability}</p>
+                      </div>
+                    )}
+
+                    {stand.seasonal_availability && (
+                      <div>
+                        <h3 className="font-semibold text-[#5e4b3a] mb-2 flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Seasonal Availability
+                        </h3>
+                        <p className="text-[#5e4b3a]/80">{stand.seasonal_availability}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Contact */}
+                {stand.contact_phone && (
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2 flex items-center">
+                      <Phone className="h-4 w-4 mr-1" />
+                      Contact
+                    </h3>
+                    <a href={`tel:${stand.contact_phone}`} className="text-[#2d5d2a] hover:underline">
+                      {formatPhoneNumber(stand.contact_phone)}
+                    </a>
+                  </div>
+                )}
+
+                {/* Additional Details */}
+                {stand.additional_details && (
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Additional Details</h3>
+                    <p className="text-[#5e4b3a]/80 leading-relaxed">{stand.additional_details}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Map */}
+            {stand.latitude && stand.longitude && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-[#5e4b3a] flex items-center justify-between">
+                    Location
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
+                    >
+                      <a href={getDirectionsUrl()} target="_blank" rel="noopener noreferrer">
+                        Get Directions ↗
+                      </a>
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div id="stand-map" className="w-full h-64 rounded-lg border border-gray-200"></div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Verification Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[#5e4b3a] flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  Community Verification
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#2d5d2a]">{stand.verification_count}</div>
+                  <p className="text-sm text-[#5e4b3a]/80">Total Verifications</p>
+                </div>
+
+                {stand.verification_count > 0 && (
+                  <div className="text-center">
+                    <p className="text-sm text-[#5e4b3a]/80">
+                      <span 
+                        className="cursor-help underline decoration-dotted"
+                        onMouseEnter={() => setShowVerifierNames(true)}
+                        onMouseLeave={() => setShowVerifierNames(false)}
+                        onClick={() => setShowVerifierNames(!showVerifierNames)}
+                      >
+                        {stand.recent_verifiers.length} users
+                      </span>
+                      {" "}have verified this stand {stand.verification_count} times
+                    </p>
+                    
+                    {showVerifierNames && stand.recent_verifiers.length > 0 && (
+                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
+                        <div className="font-medium mb-1">Recent verifiers:</div>
+                        {stand.recent_verifiers.map((verifier, index) => (
+                          <div key={verifier.id}>
+                            {verifier.first_name} {verifier.last_name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {stand.last_verified_date && (
+                  <div className="text-center">
+                    <p className="text-xs text-[#5e4b3a]/60">
+                      Last verified: {new Date(stand.last_verified_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+
+                <Separator />
+
+                {user ? (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-[#5e4b3a]">Verify This Stand</h4>
+                    <Textarea
+                      placeholder="Optional: Add notes about your visit (e.g., 'Good quality oak, fair prices')"
+                      value={verificationForm.notes}
+                      onChange={(e) => setVerificationForm({ notes: e.target.value })}
+                      className="text-sm"
+                      rows={3}
+                    />
+                    <Button
+                      onClick={handleVerificationSubmit}
+                      disabled={submittingVerification}
+                      className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
+                    >
+                      {submittingVerification ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Verify Stand
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-[#5e4b3a]/60 text-center">
+                      Help other users by confirming this stand is active and accurate
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push("/login")}
+                      className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
+                    >
+                      Login to Verify
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Stand Owner */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[#5e4b3a] flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Stand Owner
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="font-medium text-[#5e4b3a]">{stand.owner_name}</p>
+                <p className="text-sm text-[#5e4b3a]/60">
+                  Listed {new Date(stand.created_at).toLocaleDateString()}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
