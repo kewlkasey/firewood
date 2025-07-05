@@ -21,7 +21,8 @@ import {
   Shield,
   Star,
   AlertCircle,
-  Loader2
+  Loader2,
+  TreesIcon as Tree
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/auth"
@@ -384,8 +385,76 @@ export default function StandPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f1e8]">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <Tree className="h-6 w-6 text-[#2d5d2a]" />
+              <span className="text-xl font-bold text-[#2d5d2a]">FindLocalFirewood</span>
+            </button>
+          </div>
+          <nav className="hidden md:flex gap-6">
+            <button
+              onClick={() => router.push("/directory")}
+              className="text-[#2d5d2a] font-medium"
+            >
+              Directory
+            </button>
+            <button
+              onClick={() => router.push("/list-your-stand")}
+              className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors"
+            >
+              List Your Stand
+            </button>
+            <button
+              onClick={() => router.push("#")}
+              className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors"
+            >
+              About
+            </button>
+          </nav>
+          <div className="hidden md:flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/login")}
+              className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10 bg-transparent"
+            >
+              Login
+            </Button>
+            <Button 
+              onClick={() => router.push("/register")}
+              className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
+            >
+              Sign Up
+            </Button>
+          </div>
+          <div className="md:hidden">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-6 w-6 text-[#5e4b3a]"
+            >
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="18" y2="18" />
+            </svg>
+          </div>
+        </div>
+      </header>
+
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Breadcrumb */}
         <div className="mb-6">
           <Button
             variant="outline"
