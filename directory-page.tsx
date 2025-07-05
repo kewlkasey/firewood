@@ -213,7 +213,14 @@ function StandCard({
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-6 border border-gray-200">
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold text-[#5e4b3a] line-clamp-2">{stand.stand_name}</h3>
+        <h3 
+          className="text-lg font-semibold text-[#5e4b3a] line-clamp-2 cursor-pointer hover:text-[#2d5d2a] transition-colors"
+          onClick={() => {
+            window.location.href = `/stand/${stand.id}`
+          }}
+        >
+          {stand.stand_name}
+        </h3>
         {getStatusBadge()}
       </div>
 
@@ -285,8 +292,7 @@ function StandCard({
       <Button
         className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
         onClick={() => {
-          // Future: Open stand details modal or page
-          console.log("View details for:", stand.id)
+          window.location.href = `/stand/${stand.id}`
         }}
       >
         View Details

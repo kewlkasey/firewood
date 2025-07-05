@@ -401,23 +401,40 @@ export default function InteractiveMap() {
           ${getPaymentIcons(stand.payment_methods)}
         </div>
 
-        <a href="${getDirectionsUrl(stand)}" target="_blank" rel="noopener noreferrer" 
-           style="
-             display: inline-block;
-             background: #2d5d2a;
-             color: white;
-             text-decoration: none;
-             padding: 6px 12px;
-             border-radius: 6px;
-             font-size: 12px;
-             font-weight: 500;
-             margin-top: 8px;
-             width: 100%;
-             text-align: center;
-             box-sizing: border-box;
-           ">
-          Get Directions ↗
-        </a>
+        <div style="display: flex; gap: 4px; margin-top: 8px;">
+          <a href="/stand/${stand.id}" 
+             style="
+               display: inline-block;
+               background: #5e4b3a;
+               color: white;
+               text-decoration: none;
+               padding: 6px 12px;
+               border-radius: 6px;
+               font-size: 12px;
+               font-weight: 500;
+               flex: 1;
+               text-align: center;
+               box-sizing: border-box;
+             ">
+            View Details
+          </a>
+          <a href="${getDirectionsUrl(stand)}" target="_blank" rel="noopener noreferrer" 
+             style="
+               display: inline-block;
+               background: #2d5d2a;
+               color: white;
+               text-decoration: none;
+               padding: 6px 12px;
+               border-radius: 6px;
+               font-size: 12px;
+               font-weight: 500;
+               flex: 1;
+               text-align: center;
+               box-sizing: border-box;
+             ">
+            Directions ↗
+          </a>
+        </div>
       </div>
     `
   }
