@@ -116,7 +116,7 @@ export default function StandPage() {
         .from("firewood_stands")
         .select(`
           *,
-          profiles:user_id (
+          profiles:submitted_by_user_id (
             first_name,
             last_name,
             email
