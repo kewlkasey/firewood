@@ -108,21 +108,50 @@ export default function TestStandPage() {
 
   const fetchAvailableStands = async () => {
     try {
+      // 48047 coordinates (New Baltimore, MI area)
+      const targetLat = 42.6369
+      const targetLng = -82.7326
+
       const { data, error } = await supabase
         .from("firewood_stands")
-        .select("id, stand_name, address")
+        .select("id, stand_name, address, latitude, longitude")
         .eq("is_approved", true)
-        .order("stand_name")
-        .limit(10)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
 
       if (error) throw error
-      setStands(data || [])
-      if (data && data.length > 0) {
-        setSelectedStandId(data[0].id)
+
+      // Calculate distance and sort by proximity to 48047
+      const standsWithDistance = (data || []).map(stand => {
+        const distance = calculateDistance(
+          targetLat, 
+          targetLng, 
+          stand.latitude, 
+          stand.longitude
+        )
+        return { ...stand, distance }
+      }).sort((a, b) => a.distance - b.distance).slice(0, 30)
+
+      setStands(standsWithDistance)
+      if (standsWithDistance.length > 0) {
+        setSelectedStandId(standsWithDistance[0].id)
       }
     } catch (error: any) {
       console.error("Error fetching stands:", error)
     }
+  }
+
+  // Helper function to calculate distance between two points
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 3959 // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLng = (lng2 - lng1) * Math.PI / 180
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    return R * c
   }
 
   const fetchStandDetails = async (standId: string) => {
@@ -462,16 +491,16 @@ export default function TestStandPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-blue-800 mb-2">
-                  Select a stand to test:
+                  Select a stand to test (30 closest to 48047):
                 </label>
                 <select
                   value={selectedStandId || ""}
                   onChange={(e) => setSelectedStandId(e.target.value)}
                   className="w-full p-2 border border-blue-300 rounded"
                 >
-                  {stands.map((s) => (
+                  {stands.map((s, index) => (
                     <option key={s.id} value={s.id}>
-                      {s.stand_name} - {s.address}
+                      #{index + 1} - {s.stand_name} - {s.address} ({s.distance?.toFixed(1)} mi)
                     </option>
                   ))}
                 </select>
