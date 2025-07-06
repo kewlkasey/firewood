@@ -476,38 +476,42 @@ export default function TestStandPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Test Controls */}
-        <Card className="mb-6 bg-blue-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-blue-800 flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              Test Mode - Authenticated User Experience
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-blue-700 mb-4">
-              Simulating authenticated user: <strong>{mockUser.first_name} {mockUser.last_name}</strong> ({mockUser.email})
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-blue-800 mb-2">
-                  Select a stand to test (30 closest to 48047):
-                </label>
-                <select
-                  value={selectedStandId || ""}
-                  onChange={(e) => setSelectedStandId(e.target.value)}
-                  className="w-full p-2 border border-blue-300 rounded"
-                >
-                  {stands.map((s, index) => (
-                    <option key={s.id} value={s.id}>
-                      #{index + 1} - {s.stand_name} - {s.address} ({s.distance?.toFixed(1)} mi)
-                    </option>
-                  ))}
-                </select>
+        {/* Test Controls - Always Visible */}
+        <div className="sticky top-16 z-40 mb-6">
+          <Card className="bg-blue-50 border-blue-200 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-blue-800 flex items-center text-sm">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Test Mode - Authenticated User Experience
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                <div className="flex-1">
+                  <p className="text-blue-700 text-sm mb-2">
+                    User: <strong>{mockUser.first_name} {mockUser.last_name}</strong> ({mockUser.email})
+                  </p>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedStandId || ""}
+                      onChange={(e) => setSelectedStandId(e.target.value)}
+                      className="flex-1 p-2 text-sm border border-blue-300 rounded"
+                    >
+                      {stands.map((s, index) => (
+                        <option key={s.id} value={s.id}>
+                          #{index + 1} - {s.stand_name} ({s.distance?.toFixed(1)} mi)
+                        </option>
+                      ))}
+                    </select>
+                    <Badge variant="outline" className="text-blue-800 border-blue-300">
+                      {stands.length} stands
+                    </Badge>
+                  </div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Breadcrumb */}
         <div className="mb-6">
