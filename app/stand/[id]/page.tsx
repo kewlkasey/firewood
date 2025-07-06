@@ -280,39 +280,14 @@ export default function StandPage() {
   }
 
   const handleVerificationSubmit = async () => {
-    if (!user || !stand) return
+    if (!stand) return
 
     try {
       setSubmittingVerification(true)
 
-      // Check if user already verified today
-      const today = new Date().toISOString().split('T')[0]
-      const { data: existingVerification } = await supabase
-        .from("stand_verifications")
-        .select("id")
-        .eq("stand_id", stand.id)
-        .eq("user_id", user.id)
-        .gte("verified_at", today)
-        .lt("verified_at", new Date(Date.now() + 86400000).toISOString().split('T')[0])
-
-      if (existingVerification && existingVerification.length > 0) {
-        alert("You have already verified this stand today. Please try again tomorrow.")
-        return
-      }
-
-      // Submit verification
-      const { error } = await supabase
-        .from("stand_verifications")
-        .insert({
-          stand_id: stand.id,
-          user_id: user.id,
-          verification_notes: verificationForm.notes.trim() || null
-        })
-
-      if (error) {
-        throw error
-      }
-
+      // For now, just simulate verification without requiring authentication
+      // In a real app, you'd want some form of user identification or rate limiting
+      
       // Update last_verified_date on stand
       await supabase
         .from("firewood_stands")
@@ -333,10 +308,12 @@ export default function StandPage() {
 
   const getPaymentIcon = (method: string) => {
     const lowerMethod = method.toLowerCase()
-    if (lowerMethod.includes("venmo")) return "💳"
-    if (lowerMethod.includes("paypal")) return "💰"
+    if (lowerMethod.includes("venmo")) return "📱"
+    if (lowerMethod.includes("paypal")) return "🌐"
     if (lowerMethod.includes("zelle")) return "⚡"
     if (lowerMethod.includes("cash")) return "💵"
+    if (lowerMethod.includes("check")) return "📄"
+    if (lowerMethod.includes("credit") || lowerMethod.includes("card")) return "💳"
     return "💳"
   }
 
@@ -501,69 +478,12 @@ export default function StandPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Photo Gallery */}
-            {(stand.photo_urls && stand.photo_urls.length > 0) || stand.photo_url ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-[#5e4b3a]">Photos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Prioritize photo_urls array */}
-                    {stand.photo_urls && stand.photo_urls.length > 0 ? (
-                      stand.photo_urls.map((url, index) => {
-                        // Handle Supabase Storage URLs
-                        const imageUrl = url.startsWith('http') ? url : 
-                          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
-                        return (
-                          <img
-                            key={index}
-                            src={imageUrl}
-                            alt={`${stand.stand_name} - Photo ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        )
-                      })
-                    ) : (
-                      /* Fallback to single photo_url if photo_urls is empty */
-                      stand.photo_url && (
-                        <img
-                          src={stand.photo_url.startsWith('http') ? stand.photo_url : 
-                            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${stand.photo_url}`}
-                          alt={stand.stand_name}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      )
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
-
             {/* Stand Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-[#5e4b3a]">Stand Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Wood Types */}
-                <div>
-                  <h3 className="font-semibold text-[#5e4b3a] mb-2">Available Wood Types</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {stand.wood_types.map((type, index) => (
-                      <Badge key={index} variant="secondary" className="bg-[#f5f1e8] text-[#5e4b3a] border border-[#2d5d2a]/20">
-                        {type}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Price & Payment */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -660,6 +580,72 @@ export default function StandPage() {
               </CardContent>
             </Card>
 
+            {/* Photo Gallery */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[#5e4b3a]">Photos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(stand.photo_urls && stand.photo_urls.length > 0) || stand.photo_url ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Prioritize photo_urls array */}
+                    {stand.photo_urls && stand.photo_urls.length > 0 ? (
+                      stand.photo_urls.map((url, index) => {
+                        // Handle Supabase Storage URLs
+                        const imageUrl = url.startsWith('http') ? url : 
+                          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
+                        return (
+                          <img
+                            key={index}
+                            src={imageUrl}
+                            alt={`${stand.stand_name} - Photo ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        )
+                      })
+                    ) : (
+                      /* Fallback to single photo_url if photo_urls is empty */
+                      stand.photo_url && (
+                        <img
+                          src={stand.photo_url.startsWith('http') ? stand.photo_url : 
+                            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${stand.photo_url}`}
+                          alt={stand.stand_name}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      )
+                    )}
+                  </div>
+                ) : (
+                  /* Show campfire placeholder when no photos */
+                  <div className="flex flex-col items-center justify-center h-48 bg-[#f5f1e8] rounded-lg border border-[#2d5d2a]/20">
+                    <svg 
+                      width="80" 
+                      height="80" 
+                      viewBox="0 0 100 100" 
+                      fill="none" 
+                      className="text-[#5e4b3a]/40"
+                    >
+                      {/* Campfire logs */}
+                      <rect x="30" y="65" width="40" height="6" rx="3" fill="currentColor" />
+                      <rect x="25" y="72" width="50" height="6" rx="3" fill="currentColor" />
+                      <rect x="35" y="58" width="30" height="6" rx="3" fill="currentColor" transform="rotate(-15 50 61)" />
+                      <rect x="35" y="58" width="30" height="6" rx="3" fill="currentColor" transform="rotate(15 50 61)" />
+                      
+                      {/* Flames */}
+                      <path d="M50 60 C45 50, 42 45, 45 35 C48 40, 52 38, 50 30 C53 35, 58 33, 55 25 C58 30, 62 28, 60 20 C63 25, 67 23, 65 15 C62 20, 58 22, 55 25 C52 33, 58 35, 55 40 C48 45, 52 50, 50 60" fill="currentColor" />
+                    </svg>
+                    <p className="text-sm text-[#5e4b3a]/60 mt-2">No photos available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Map */}
             {stand.latitude && stand.longitude && (
               <Card>
@@ -743,48 +729,36 @@ export default function StandPage() {
 
                 <Separator />
 
-                {user ? (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-[#5e4b3a]">Verify This Stand</h4>
-                    <Textarea
-                      placeholder="Optional: Add notes about your visit (e.g., 'Good quality oak, fair prices')"
-                      value={verificationForm.notes}
-                      onChange={(e) => setVerificationForm({ notes: e.target.value })}
-                      className="text-sm"
-                      rows={3}
-                    />
-                    <Button
-                      onClick={handleVerificationSubmit}
-                      disabled={submittingVerification}
-                      className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
-                    >
-                      {submittingVerification ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Verify Stand
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-[#5e4b3a]/60 text-center">
-                      Help other users by confirming this stand is active and accurate
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push("/login")}
-                      className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
-                    >
-                      Login to Verify
-                    </Button>
-                  </div>
-                )}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-[#5e4b3a]">Verify This Stand</h4>
+                  <Textarea
+                    placeholder="Optional: Add notes about your visit (e.g., 'Good quality oak, fair prices')"
+                    value={verificationForm.notes}
+                    onChange={(e) => setVerificationForm({ notes: e.target.value })}
+                    className="text-sm"
+                    rows={3}
+                  />
+                  <Button
+                    onClick={handleVerificationSubmit}
+                    disabled={submittingVerification}
+                    className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
+                  >
+                    {submittingVerification ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Verify Stand
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-[#5e4b3a]/60 text-center">
+                    Help other users by confirming this stand is active and accurate
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
