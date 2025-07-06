@@ -705,8 +705,12 @@ export default function StandPage() {
               disabled={true}
               className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed font-medium opacity-50"
             >
-              Check In to This Stand (Coming Soon)
+              Check In to This Stand 
             </button>
+
+            <p className="text-xs text-[#5e4b3a]/60 text-center">
+              Help others find great firewood stands in your community
+            </p>
 
             {/* Last Check-In User */}
             {stand.recent_verifiers.length > 0 ? (
