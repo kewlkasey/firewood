@@ -689,10 +689,18 @@ export default function StandPage() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm text-[#5e4b3a]/80">
-              Help others by checking in to verify this stand is still active and the information is accurate.
-            </p>
+            {/* Total Check-Ins Counter */}
+            <div className="text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="h-4 w-4 mr-2 text-[#5e4b3a]" />
+                <span className="text-lg font-semibold text-[#2d5d2a]">
+                  {stand.verification_count + 1}
+                </span>
+                <span className="text-sm text-[#5e4b3a]/80 ml-1">total check-ins</span>
+              </div>
+            </div>
 
+            {/* Check In Button */}
             <button
               disabled={true}
               className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed font-medium opacity-50"
@@ -700,14 +708,10 @@ export default function StandPage() {
               Check In to This Stand (Coming Soon)
             </button>
 
-            <p className="text-xs text-[#5e4b3a]/60 text-center">
-              Help others find great firewood stands in your community
-            </p>
-
             {/* Last Check-In User */}
-            {stand.recent_verifiers.length > 0 && (
+            {stand.recent_verifiers.length > 0 ? (
               <div className="border-t pt-4">
-                <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Last Check-In</h3>
+                <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Last Check-In By</h3>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                     <User className="h-4 w-4 text-gray-600" />
@@ -723,6 +727,13 @@ export default function StandPage() {
                       Total contributions: 1 check-in/submission
                     </div>
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Last Check-In By</h3>
+                <div className="p-3 bg-gray-50 rounded-lg text-center">
+                  <p className="text-sm text-[#5e4b3a]/60">No check-ins yet</p>
                 </div>
               </div>
             )}
@@ -746,48 +757,6 @@ export default function StandPage() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="text-center border-t pt-4">
-              <div className="flex items-center justify-center mb-2">
-                <Users className="h-4 w-4 mr-2 text-[#5e4b3a]" />
-                <span className="text-lg font-semibold text-[#2d5d2a]">
-                  {stand.verification_count + 1}
-                </span>
-                <span className="text-sm text-[#5e4b3a]/80 ml-1">total check-ins</span>
-              </div>
-
-                {stand.verification_count > 0 && (
-                  <div className="text-center">
-                    <p className="text-sm text-[#5e4b3a]/80">
-                      <span 
-                        className="cursor-help underline decoration-dotted"
-                        onMouseEnter={() => setShowVerifierNames(true)}
-                        onMouseLeave={() => setShowVerifierNames(false)}
-                        onClick={() => setShowVerifierNames(!showVerifierNames)}
-                      >
-                        {stand.recent_verifiers.length} users
-                      </span>
-                      {" "}have checked in to this stand {stand.verification_count + 1} times
-                    </p>
-
-                    {showVerifierNames && stand.recent_verifiers.length > 0 && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
-                        <div className="font-medium mb-1">Recent check-ins:</div>
-                        {stand.recent_verifiers.map((verifier, index) => (
-                          <div key={verifier.id} className="flex items-center gap-1">
-                            <span>{verifier.first_name} {verifier.last_name}</span>
-                            {verifier.is_submitter && (
-                              <Badge variant="outline" className="text-xs py-0 px-1">
-                                Submitter
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
             </div>
           </div>
         </div>
