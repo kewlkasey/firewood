@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -17,12 +16,13 @@ import {
   CheckCircle, 
   ArrowLeft,
   Calendar,
-  User,
+  Users,
   Shield,
   Star,
   AlertCircle,
   Loader2,
-  TreesIcon as Tree
+  TreesIcon as Tree,
+  User
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/auth"
@@ -155,7 +155,7 @@ export default function StandPage() {
       // Fetch profiles for verifiers separately
       const allVerifications = verificationData || []
       const recentVerifiers = []
-      
+
       if (allVerifications.length > 0) {
         const userIds = allVerifications.slice(0, 10).map(v => v.user_id)
         const { data: verifierProfiles } = await supabase
@@ -186,7 +186,7 @@ export default function StandPage() {
 
       // Process verification data - exclude self-verifications for the "verified" status
       const nonSubmitterVerifications = allVerifications.filter(v => v.user_id !== standData.submitted_by_user_id)
-      
+
       const verificationCount = allVerifications.length
       const nonSubmitterVerificationCount = nonSubmitterVerifications.length
 
@@ -287,7 +287,7 @@ export default function StandPage() {
 
       // For now, just simulate verification without requiring authentication
       // In a real app, you'd want some form of user identification or rate limiting
-      
+
       // Update last_verified_date on stand
       await supabase
         .from("firewood_stands")
@@ -636,7 +636,7 @@ export default function StandPage() {
                       <rect x="25" y="72" width="50" height="6" rx="3" fill="currentColor" />
                       <rect x="35" y="58" width="30" height="6" rx="3" fill="currentColor" transform="rotate(-15 50 61)" />
                       <rect x="35" y="58" width="30" height="6" rx="3" fill="currentColor" transform="rotate(15 50 61)" />
-                      
+
                       {/* Flames */}
                       <path d="M50 60 C45 50, 42 45, 45 35 C48 40, 52 38, 50 30 C53 35, 58 33, 55 25 C58 30, 62 28, 60 20 C63 25, 67 23, 65 15 C62 20, 58 22, 55 25 C52 33, 58 35, 55 40 C48 45, 52 50, 50 60" fill="currentColor" />
                     </svg>
@@ -673,19 +673,89 @@ export default function StandPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Verification Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#5e4b3a] flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  Community Verification
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-[#2d5d2a]">{stand.verification_count}</div>
-                  <p className="text-sm text-[#5e4b3a]/80">Total Verifications</p>
+            {/* Check-In Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-[#2d5d2a] flex items-center">
+              <CheckCircle className="mr-2 h-5 w-5" />
+              Check-In
+            </h2>
+            {stand.is_verified_by_community && (
+              <div className="flex items-center text-green-600">
+                <CheckCircle className="h-4 w-4 mr-1" />
+                <span className="text-sm font-medium">Community Verified</span>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm text-[#5e4b3a]/80">
+              Help others by checking in to verify this stand is still active and the information is accurate.
+            </p>
+
+            <button
+              disabled={true}
+              className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed font-medium opacity-50"
+            >
+              Check In to This Stand (Coming Soon)
+            </button>
+
+            <p className="text-xs text-[#5e4b3a]/60 text-center">
+              Help others find great firewood stands in your community
+            </p>
+
+            {/* Last Check-In User */}
+            {stand.recent_verifiers.length > 0 && (
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Last Check-In</h3>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-[#5e4b3a]">
+                      {stand.recent_verifiers[0].first_name} {stand.recent_verifiers[0].last_name}
+                    </div>
+                    <div className="text-xs text-[#5e4b3a]/70">
+                      Checked in on {new Date(stand.recent_verifiers[0].verified_at).toLocaleDateString()}
+                    </div>
+                    <div className="text-xs text-[#5e4b3a]/60">
+                      Total contributions: 1 check-in/submission
+                    </div>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* Stand Submitter Info */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Stand Submitted By</h3>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-gray-600" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-[#5e4b3a]">
+                    {stand.owner_name}
+                  </div>
+                  <div className="text-xs text-[#5e4b3a]/70">
+                    Submitted on {new Date(stand.created_at).toLocaleDateString()}
+                  </div>
+                  <div className="text-xs text-[#5e4b3a]/60">
+                    Total contributions: 1 check-in/submission
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center border-t pt-4">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="h-4 w-4 mr-2 text-[#5e4b3a]" />
+                <span className="text-lg font-semibold text-[#2d5d2a]">
+                  {stand.verification_count + 1}
+                </span>
+                <span className="text-sm text-[#5e4b3a]/80 ml-1">total check-ins</span>
+              </div>
 
                 {stand.verification_count > 0 && (
                   <div className="text-center">
@@ -698,18 +768,18 @@ export default function StandPage() {
                       >
                         {stand.recent_verifiers.length} users
                       </span>
-                      {" "}have verified this stand {stand.verification_count} times
+                      {" "}have checked in to this stand {stand.verification_count + 1} times
                     </p>
-                    
+
                     {showVerifierNames && stand.recent_verifiers.length > 0 && (
                       <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
-                        <div className="font-medium mb-1">Recent verifiers:</div>
+                        <div className="font-medium mb-1">Recent check-ins:</div>
                         {stand.recent_verifiers.map((verifier, index) => (
                           <div key={verifier.id} className="flex items-center gap-1">
                             <span>{verifier.first_name} {verifier.last_name}</span>
                             {verifier.is_submitter && (
                               <Badge variant="outline" className="text-xs py-0 px-1">
-                                Owner
+                                Submitter
                               </Badge>
                             )}
                           </div>
@@ -718,49 +788,9 @@ export default function StandPage() {
                     )}
                   </div>
                 )}
-
-                {stand.last_verified_date && (
-                  <div className="text-center">
-                    <p className="text-xs text-[#5e4b3a]/60">
-                      Last verified: {new Date(stand.last_verified_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <h4 className="font-medium text-[#5e4b3a]">Verify This Stand</h4>
-                  <Textarea
-                    placeholder="Optional: Add notes about your visit (e.g., 'Good quality oak, fair prices')"
-                    value={verificationForm.notes}
-                    onChange={(e) => setVerificationForm({ notes: e.target.value })}
-                    className="text-sm"
-                    rows={3}
-                  />
-                  <Button
-                    onClick={handleVerificationSubmit}
-                    disabled={submittingVerification}
-                    className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
-                  >
-                    {submittingVerification ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Verify Stand
-                      </>
-                    )}
-                  </Button>
-                  <p className="text-xs text-[#5e4b3a]/60 text-center">
-                    Help other users by confirming this stand is active and accurate
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
+          </div>
+        </div>
 
             {/* Stand Owner */}
             <Card>
