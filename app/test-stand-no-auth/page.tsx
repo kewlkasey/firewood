@@ -687,93 +687,88 @@ export default function TestStandNoAuthPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Verification Status */}
+            {/* Check-In */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-[#5e4b3a] flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  Community Verification
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Check-In
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#2d5d2a]">{stand.verification_count}</div>
-                  <p className="text-sm text-[#5e4b3a]/80">Total Verifications</p>
+                  <p className="text-sm text-[#5e4b3a]/80">total check-ins</p>
                 </div>
 
-                {stand.verification_count > 0 && (
-                  <div className="text-center">
-                    <p className="text-sm text-[#5e4b3a]/80">
-                      <span 
-                        className="cursor-help underline decoration-dotted"
-                        onMouseEnter={() => setShowVerifierNames(true)}
-                        onMouseLeave={() => setShowVerifierNames(false)}
-                        onClick={() => setShowVerifierNames(!showVerifierNames)}
-                      >
-                        {stand.recent_verifiers.length} users
-                      </span>
-                      {" "}have verified this stand {stand.verification_count} times
-                    </p>
-                    
-                    {showVerifierNames && stand.recent_verifiers.length > 0 && (
-                      <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
-                        <div className="font-medium mb-1">Recent verifiers:</div>
-                        {stand.recent_verifiers.map((verifier, index) => (
-                          <div key={verifier.id} className="flex items-center gap-1">
-                            <span>{verifier.first_name} {verifier.last_name}</span>
-                            {verifier.is_submitter && (
-                              <Badge variant="outline" className="text-xs py-0 px-1">
-                                Owner
-                              </Badge>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/login")}
+                  className="w-full border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
+                >
+                  Check In to This Stand (Coming Soon)
+                </Button>
 
-                {stand.last_verified_date && (
-                  <div className="text-center">
-                    <p className="text-xs text-[#5e4b3a]/60">
-                      Last verified: {new Date(stand.last_verified_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                <Separator />
-
-                {/* Non-authenticated user experience */}
-                <div className="text-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push("/login")}
-                    className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
-                  >
-                    Login to Verify
-                  </Button>
-                  <p className="text-xs text-[#5e4b3a]/60 text-center mt-2">
-                    Help other users by confirming this stand is active and accurate
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Stand Owner */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#5e4b3a] flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Stand Owner
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-medium text-[#5e4b3a]">{stand.owner_name}</p>
-                <p className="text-sm text-[#5e4b3a]/60">
-                  Listed {new Date(stand.created_at).toLocaleDateString()}
+                <p className="text-xs text-[#5e4b3a]/60 text-center">
+                  Help others find great firewood stands in your community
                 </p>
+
+                {/* Last Check-In */}
+                <Separator />
+                <div>
+                  <h4 className="font-medium text-[#5e4b3a] mb-2">Last Check-In By</h4>
+                  {stand.recent_verifiers.length > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-[#5e4b3a]">
+                          {stand.recent_verifiers[0].first_name} {stand.recent_verifiers[0].last_name}
+                          {stand.recent_verifiers[0].is_submitter && (
+                            <Badge variant="outline" className="text-xs py-0 px-1 ml-2">
+                              Owner
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-xs text-[#5e4b3a]/60">
+                          Checked in {new Date(stand.recent_verifiers[0].verified_at).toLocaleDateString()}
+                        </p>
+                        {stand.verification_count > 1 && (
+                          <p className="text-xs text-[#5e4b3a]/60">
+                            Total contributions: {stand.recent_verifiers.filter(v => v.id === stand.recent_verifiers[0].id).length} check-in/submission
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-[#5e4b3a]/60">No check-ins yet</p>
+                  )}
+                </div>
+
+                {/* Submission Section */}
+                <Separator />
+                <div>
+                  <h4 className="font-medium text-[#5e4b3a] mb-2">Stand Submitted By</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[#5e4b3a]">{stand.owner_name}</p>
+                      <p className="text-xs text-[#5e4b3a]/60">
+                        Submitted on {new Date(stand.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-[#5e4b3a]/60">
+                        Total contributions: 1 check-in/submission
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
+
+            
           </div>
         </div>
       </div>
