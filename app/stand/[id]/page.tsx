@@ -527,7 +527,7 @@ export default function StandPage() {
                     <p className="text-sm">
                       {stand.inventory_level === 'None' 
                         ? 'This stand is currently out of firewood. Please contact the owner or check back later.'
-                        : 'This stand has limited firewood available. Consider calling ahead to confirm availability.'
+                        : `This stand has limited firewood available.${stand.contact_phone ? ' Consider calling ahead to confirm availability.' : ' Availability may be limited.'}`
                       }
                     </p>
                   </div>
