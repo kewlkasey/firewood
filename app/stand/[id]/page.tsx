@@ -509,6 +509,30 @@ export default function StandPage() {
                 <CardTitle className="text-[#5e4b3a]">Stand Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Inventory Level Warning */}
+                {stand.inventory_level && (stand.inventory_level === 'Low' || stand.inventory_level === 'None') && (
+                  <div className={`p-4 rounded-lg border-2 ${
+                    stand.inventory_level === 'None' 
+                      ? 'bg-red-50 border-red-200 text-red-800' 
+                      : 'bg-orange-50 border-orange-200 text-orange-800'
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">
+                        {stand.inventory_level === 'None' ? '🔴' : '🟠'}
+                      </span>
+                      <h3 className="font-semibold text-base">
+                        {stand.inventory_level === 'None' ? 'INVENTORY EMPTY' : 'LOW INVENTORY WARNING'}
+                      </h3>
+                    </div>
+                    <p className="text-sm">
+                      {stand.inventory_level === 'None' 
+                        ? 'This stand is currently out of firewood. Please contact the owner or check back later.'
+                        : 'This stand has limited firewood available. Consider calling ahead to confirm availability.'
+                      }
+                    </p>
+                  </div>
+                )}
+
                 {/* Price & Payment */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>

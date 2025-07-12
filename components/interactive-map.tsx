@@ -338,7 +338,7 @@ export default function InteractiveMap() {
 
   const createPopupContent = (stand: FirewoodStand, distance: number) => {
     const statusBadge = stand.is_approved
-      ? `<span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">✓ Active</span>`
+      ? `<span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">Active</span>`
       : `<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">⏰ Pending</span>`
 
     const getCityState = (address: string) => {
@@ -406,15 +406,17 @@ export default function InteractiveMap() {
       ? `${distance.toFixed(1)} miles away`
       : `<span title="Enable location sharing for accurate distance">${distance.toFixed(1)} miles away*</span>`
 
-      // Conditionally render the inventory level badge, placing it next to the status badge
+      // Conditionally render the inventory level badge
     const inventoryLevelBadge = stand.inventory_level ? getInventoryLevelBadge(stand.inventory_level) : '';
-    const badges = `${statusBadge} ${inventoryLevelBadge}`;
 
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-          <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2; max-width: 180px;">${stand.stand_name}</h3>
-          ${badges}
+        <div style="margin-bottom: 8px;">
+          <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2;">${stand.stand_name}</h3>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+            ${statusBadge}
+            ${inventoryLevelBadge}
+          </div>
         </div>
 
         <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
