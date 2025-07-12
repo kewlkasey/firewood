@@ -411,9 +411,9 @@ export default function InteractiveMap() {
 
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">
-        <div style="margin-bottom: 8px;">
-          <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2;">${stand.stand_name}</h3>
-          <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px;">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2; flex: 1; min-width: 0;">${stand.stand_name}</h3>
+          <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0; white-space: nowrap;">
             ${statusBadge}
             ${inventoryLevelBadge}
           </div>
