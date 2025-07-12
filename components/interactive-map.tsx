@@ -39,6 +39,11 @@ export default function InteractiveMap() {
   // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Reset refs to ensure fresh initialization
+      map.current = null
+      markersGroup.current = null
+      setMapReady(false)
+      
       // Wait for the DOM element to be available
       const checkAndInitialize = () => {
         if (mapContainer.current) {
@@ -52,6 +57,23 @@ export default function InteractiveMap() {
       checkAndInitialize()
       fetchStands()
       requestUserLocation()
+    }
+
+    // Cleanup function to properly destroy map when component unmounts
+    return () => {
+      if (map.current) {
+        console.log("Cleaning up map on component unmount...")
+        try {
+          map.current.remove()
+        } catch (error) {
+          console.warn("Error cleaning up map:", error)
+        }
+        map.current = null
+      }
+      if (markersGroup.current) {
+        markersGroup.current = null
+      }
+      setMapReady(false)
     }
   }, [])
 
@@ -75,6 +97,12 @@ export default function InteractiveMap() {
       // Prevent multiple initializations
       if (map.current) {
         console.log("Map already initialized, skipping...")
+        return
+      }
+
+      // Ensure DOM element exists and is attached to the document
+      if (!mapContainer.current || !document.contains(mapContainer.current)) {
+        console.warn("Map container not ready or not attached to DOM")
         return
       }
 
@@ -110,36 +138,48 @@ export default function InteractiveMap() {
       // Wait a bit for Leaflet to be ready
       await new Promise(resolve => setTimeout(resolve, 100))
 
+      // Double-check DOM element is still valid before proceeding
+      if (!mapContainer.current || !document.contains(mapContainer.current)) {
+        console.warn("Map container became invalid during initialization")
+        return
+      }
+
       // Initialize map with fallback location
       if (mapContainer.current && !map.current && window.L) {
         console.log("Initializing map with location:", userLocation)
         console.log("Map container element:", mapContainer.current)
 
-        map.current = window.L.map(mapContainer.current, {
-          center: [userLocation.lat, userLocation.lng],
-          zoom: 9, // Zoom level 9 shows roughly 25-30 mile radius
-          zoomControl: true,
-          attributionControl: true
-        })
+        try {
+          map.current = window.L.map(mapContainer.current, {
+            center: [userLocation.lat, userLocation.lng],
+            zoom: 9, // Zoom level 9 shows roughly 25-30 mile radius
+            zoomControl: true,
+            attributionControl: true
+          })
 
-        // Add tile layer
-        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(map.current)
+          // Add tile layer
+          window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }).addTo(map.current)
 
-        // Initialize markers group
-        markersGroup.current = window.L.featureGroup().addTo(map.current)
+          // Initialize markers group
+          markersGroup.current = window.L.featureGroup().addTo(map.current)
 
-        console.log("Map initialized successfully")
-        setMapReady(true)
+          console.log("Map initialized successfully")
+          setMapReady(true)
 
-        // Force map to resize to fill container
-        setTimeout(() => {
-          if (map.current) {
-            map.current.invalidateSize()
-          }
-        }, 100)
+          // Force map to resize to fill container
+          setTimeout(() => {
+            if (map.current && mapContainer.current && document.contains(mapContainer.current)) {
+              map.current.invalidateSize()
+            }
+          }, 100)
+        } catch (mapError) {
+          console.error("Error creating Leaflet map instance:", mapError)
+          setError("Failed to create map instance: " + mapError.message)
+          return
+        }
       } else {
         const missingRequirements = []
         if (!mapContainer.current) missingRequirements.push("mapContainer")
@@ -150,7 +190,8 @@ export default function InteractiveMap() {
         console.error("Debug info:", {
           mapContainer: !!mapContainer.current,
           mapExists: !!map.current,
-          leafletLoaded: !!window.L
+          leafletLoaded: !!window.L,
+          containerInDOM: mapContainer.current ? document.contains(mapContainer.current) : false
         })
         setError("Failed to initialize map - missing requirements: " + missingRequirements.join(", "))
       }
@@ -244,10 +285,20 @@ export default function InteractiveMap() {
   }
 
   const updateMapMarkers = () => {
-    if (!map.current || !window.L || !markersGroup.current) return
+    if (!map.current || !window.L || !markersGroup.current) {
+      console.warn("Cannot update markers - map not ready")
+      return
+    }
 
-    // Clear existing markers
-    markersGroup.current.clearLayers()
+    // Verify map container is still valid
+    if (!mapContainer.current || !document.contains(mapContainer.current)) {
+      console.warn("Cannot update markers - map container invalid")
+      return
+    }
+
+    try {
+      // Clear existing markers
+      markersGroup.current.clearLayers()
 
     // Add user location marker
     const userIcon = window.L.divIcon({
@@ -316,6 +367,10 @@ export default function InteractiveMap() {
 
     // Don't auto-fit bounds to preserve the initial zoom level showing ~25 mile radius
     // Users can zoom out to see all stands if needed
+    } catch (error) {
+      console.error("Error updating map markers:", error)
+      // Don't set error state here as this is recoverable
+    }
   }
 
   const getInventoryLevelBadge = (level: string | null | undefined) => {
