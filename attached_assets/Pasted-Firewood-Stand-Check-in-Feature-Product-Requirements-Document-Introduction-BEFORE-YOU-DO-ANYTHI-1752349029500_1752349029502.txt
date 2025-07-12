@@ -1,0 +1,185 @@
+Firewood Stand Check-in Feature - Product Requirements Document
+Introduction:
+BEFORE YOU DO ANYTHING, ask any necessary questions you have for me as your employer about the below experiences. You may know more about the project than the person that created this document, so please confirm if you think you have a better alternative or if you are very confident, proceed.
+
+I’d expect our sequence of events to be:
+This prompt
+You ask me questions
+I answer those questions and then you provide me with requested changes (in common language) to supabase AI for database changes
+Supabase provides confirmation and details to me which i provide to you.
+You build the remaining functionality as described in the feature brief.
+
+Executive Summary
+This document outlines the product requirements for implementing a Foursquare-style check-in system for the firewood stand application. The feature will allow users to verify stand conditions, update inventory status, confirm payment methods, leave reviews, and upload photos to keep the community informed about stand availability and quality.
+Product Overview
+Vision
+Create a community-driven verification system that ensures accurate, up-to-date information about firewood stands while building user engagement and trust in the platform.
+Goals
+Provide real-time inventory and payment type acceptance verification
+Enable community-driven content through photos and reviews
+Improve data accuracy through crowdsourced updates
+Build user engagement similar to location-based social platforms
+User Stories
+Primary Users
+Authenticated Users (both owners and consumers): Registered users who can, confirm stand information, leave ratings, and comment full reviews
+Unauthenticated Users: Visitors who can check-in and leave comments but not ratings; comments are primarily for context of check-in and not necessary the rating
+Stand Owners: Users who own/manage firewood stands (future consideration)
+Feature Requirements
+1. Check-in System Core Flow
+1.1 Check-in Initiation
+Acceptance Criteria:
+Check-in button is prominently displayed on stand detail pages (already implemented)
+Button triggers check-in modal/flow that should overlay the stand page.
+System captures check-in timestamp and user location (if permissions granted)
+Each check-in creates a record in the database for audit purposes (unknown if existing audit trail table exists)
+Make the check-in experience as simple as possible
+1.2 Inventory Level Confirmation
+Acceptance Criteria:
+Present current inventory level from database as default selection
+Provide four radio button options: Empty, Low, Medium, High (pre-selected based on current data)
+Request user to confirm or update inventory level
+Request user to input amount paid per quantity
+Update firewood_stands table with new inventory level
+Create audit trail of inventory changes
+1.3 Payment Methods Confirmation
+Acceptance Criteria:
+Display all current payment methods for the stand
+Show each payment method with a checkbox (pre-checked based on current data)
+Allow users to uncheck methods that are no longer available
+Update firewood_stands table with confirmed payment methods
+Log payment method changes in audit trail
+1.4 Rating System (Authenticated Users Only)
+Acceptance Criteria:
+Incorporated in the check-in flow
+Display 1-5 star rating interface for authenticated users
+Show login button with "Sign in to leave a rating" for unauthenticated users
+Rating is optional - users can skip this step
+Store rating in the appropriate reviews table with user_id, stand_id, rating, timestamp
+Calculate and display average rating on stand page
+Do not count check-ins with no star ratings in the formula.
+Display individual ratings in reviews section
+1.5 Comment System (All Users)
+Acceptance Criteria:
+Provide optional text area for comments (max 500 characters)
+Available for both authenticated and unauthenticated users
+Include character counter
+Basic profanity filter (implement simple word list)
+Store comments in reviews table
+For unauthenticated users: store with user_id as NULL and capture IP for moderation
+3. Photo Management
+3.1 Photo Upload
+Acceptance Criteria:
+Allow users to upload 1-3 photos per check-in
+Allow users to use their camera or camera roll to upload photos.
+Support common image formats (JPEG, PNG, WebP)
+Implement client-side image compression (max 2MB per image)
+Store photo URLs in photos array field in reviews table
+Display uploaded photos in the check-in confirmation
+Add photos to stand's photo gallery
+3.2 Primary Photo Suggestion
+Acceptance Criteria:
+Include checkbox "Suggest as primary photo" (default: unchecked)
+One one photo in the check-in should be checked as “suggested as primary photo”. We cannot use a radio button because it should be able to be unchecked after being checked.
+If checked, log suggestion in stand_verifications table with type "primary_photo_suggestion"
+If stand has no primary photo, automatically set first uploaded photo as primary
+Display suggested primary photos in admin view (future enhancement)
+Update firewood_stands table primary_photo field when appropriate (future enhancement)
+4. Data Updates and Audit Trail
+4.1 Stand Information Updates
+Acceptance Criteria:
+Use most recent check-in data to update stand information
+Update inventory_level in firewood_stands table
+Update payment_methods in firewood_stands table
+Update last_verified timestamp in firewood_stands table
+Create entry in stand_verifications table for each check-in
+4.2 Audit Trail
+Acceptance Criteria:
+Log all changes to stand information with timestamp and user
+Display audit trail at bottom of stand page (collapsed by default)
+Include: date, user (if authenticated), changes made, and verification type
+The Check-Ins section at the bottom of the page should show each check-in, with or without comment, with or without rating. If any photos are added with the check-in, also show the photo thumbnails with the comment. Display comments chronologically on stand page. Display with the user’s profile photo cropped in a circle (placeholder silhouette for now), user’s initials and rating, if any. Price paid, if provided.
+Format COULD be something like: "Updated 2 hours ago by John D. - Inventory: Medium → High, Payment Type: Added Venmo"
+Maybe have a detailed view that shows the changes FROM and TO but the basic view just shows the basic information. 
+Technical Requirements
+Database Schema Changes
+Provide the prompt you think necessary for Supabase AI to make any necessary updates (create tables if they do not exist, updated columns, etc.).
+Security Considerations
+Authentication
+Use Supabase Auth for user verification
+Implement rate limiting (max 10 check-ins per user per day)
+Validate user permissions for sensitive operations
+Data Validation
+Sanitize all user inputs
+Validate and appropriately image uploads (file type, size, dimensions)
+Implement basic content moderation for comments
+User Experience Requirements
+Check-in Flow UX
+User clicks "Check-in" button on stand page
+Modal opens with current stand information pre-populated
+User confirms/updates inventory level
+User confirms/updates payment methods
+User optionally adds rating (authenticated) and/or comment
+User optionally uploads photos
+User submits check-in
+User confirms check-in
+Success message displays with thank you and updated information
+Mobile Responsiveness
+Optimize for mobile-first design
+Ensure photo upload works on mobile devices
+Implement touch-friendly star rating interface
+Performance Requirements
+Check-in submission should complete within 3 seconds
+Photo upload should show progress indicator
+Stand page should update immediately after check-in
+Success Metrics
+User Engagement
+Number of check-ins per month
+Percentage of users who complete full check-in flow
+Photo upload rate per check-in
+Data Quality
+Accuracy of inventory levels (measured by subsequent check-ins)
+Freshness of stand information (time since last verification)
+User retention rate after first check-in
+Community Building
+Number of reviews per stand
+Average rating trends over time
+User-generated photo contributions
+Future Enhancements
+Phase 2 Features
+Gamification (points, badges, leaderboards)
+Check-in streaks and rewards
+Stand owner notifications
+Advanced photo moderation
+Phase 3 Features
+Seasonal availability tracking
+Mobile app with offline check-in capability
+Acceptance Testing
+Test Scenarios
+Authenticated User Full Check-in: User logs in, updates inventory, confirms payments, adds 5-star rating, uploads photo, suggests as primary
+Unauthenticated User Check-in: Guest user updates inventory, adds comment, uploads photo
+Data Consistency: Multiple users check-in to same stand, verify most recent data is used
+Photo Management: Upload photos, verify primary photo logic works correctly
+Audit Trail: Verify all changes are logged and displayed correctly
+Edge Cases
+User loses internet connection during check-in
+Multiple users check-in simultaneously
+Photo upload failures
+Invalid data submissions
+Rate limiting enforcement
+Implementation Priority
+Phase 1 (MVP)
+Basic check-in flow with inventory and payment confirmation
+Comment system for all users
+Photo Upload Functionality Placeholders
+Basic audit trail
+Phase 2 (Enhanced)
+Photo upload functionality
+Rating system for authenticated users
+Primary photo suggestion logic
+Advanced audit trail display
+Performance optimizations
+Phase 3 (Polish)
+Enhanced UX/UI
+Advanced moderation tools
+Analytics dashboard
+Mobile app considerations
