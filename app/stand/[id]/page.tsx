@@ -65,6 +65,7 @@ interface StandDetails {
     is_submitter?: boolean
   }>
   is_verified_by_community: boolean
+  inventory_level: string | null
 }
 
 interface VerificationFormData {
@@ -330,6 +331,29 @@ export default function StandPage() {
     return `https://www.google.com/maps/dir/?api=1&destination=${stand.latitude},${stand.longitude}`
   }
 
+  const getInventoryLevelBadge = (level: string | null) => {
+    if (!level) return null
+
+    const levelConfig = {
+      'High': { color: 'bg-green-100 text-green-800 border-green-200', icon: '🟢' },
+      'Medium': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: '🟡' },
+      'Low': { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: '🟠' },
+      'None': { color: 'bg-red-100 text-red-800 border-red-200', icon: '🔴' }
+    }
+
+    const config = levelConfig[level as keyof typeof levelConfig]
+    if (!config) return null
+
+    const displayLevel = level === 'None' ? 'Empty' : level
+
+    return (
+      <Badge className={config.color}>
+        <span className="mr-1">{config.icon}</span>
+        {displayLevel} Stock
+      </Badge>
+    )
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f5f1e8] flex items-center justify-center">
@@ -453,7 +477,7 @@ export default function StandPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               {stand.is_approved ? (
                 <Badge className="bg-green-100 text-green-800 border-green-200">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -471,6 +495,7 @@ export default function StandPage() {
                   Verified
                 </Badge>
               )}
+              {getInventoryLevelBadge(stand.inventory_level) && getInventoryLevelBadge(stand.inventory_level)}
             </div>
           </div>
         </div>
@@ -772,7 +797,7 @@ export default function StandPage() {
                   <User className="h-5 w-5 mr-2" />
                   Stand Owner
                 </CardTitle>
-              </CardHeader>
+              </Card              </CardHeader>
               <CardContent>
                 <p className="font-medium text-[#5e4b3a]">{stand.owner_name}</p>
                 <p className="text-sm text-[#5e4b3a]/60">

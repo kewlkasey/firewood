@@ -14,6 +14,7 @@ interface FirewoodStand {
   payment_methods: string[]
   is_approved: boolean
   average_rating?: number
+  inventory_level?: string | null | undefined
 }
 
 const FALLBACK_LOCATION = {
@@ -168,7 +169,7 @@ export default function InteractiveMap() {
 
       const { data, error: fetchError } = await supabase
         .from("firewood_stands")
-        .select("id, stand_name, address, latitude, longitude, payment_methods, is_approved")
+        .select("id, stand_name, address, latitude, longitude, payment_methods, is_approved, inventory_level")
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .neq("latitude", 0)
@@ -317,6 +318,24 @@ export default function InteractiveMap() {
     // Users can zoom out to see all stands if needed
   }
 
+  const getInventoryLevelBadge = (level: string | null | undefined) => {
+      if (!level) return ''
+
+      const levelConfig = {
+        'High': { color: '#059669', bgColor: '#ecfdf5', icon: '🟢' },
+        'Medium': { color: '#d97706', bgColor: '#fef3c7', icon: '🟡' },
+        'Low': { color: '#ea580c', bgColor: '#fed7aa', icon: '🟠' },
+        'None': { color: '#dc2626', bgColor: '#fee2e2', icon: '🔴' }
+      }
+
+      const config = levelConfig[level as keyof typeof levelConfig]
+      if (!config) return ''
+
+      const displayLevel = level === 'None' ? 'Empty' : level
+
+      return `<span style="background: ${config.bgColor}; color: ${config.color}; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; margin-top: 4px; display: inline-block;">${config.icon} ${displayLevel} Stock</span>`
+    }
+
   const createPopupContent = (stand: FirewoodStand, distance: number) => {
     const statusBadge = stand.is_approved
       ? `<span style="background: #ecfdf5; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">✓ Active</span>`
@@ -387,11 +406,15 @@ export default function InteractiveMap() {
       ? `${distance.toFixed(1)} miles away`
       : `<span title="Enable location sharing for accurate distance">${distance.toFixed(1)} miles away*</span>`
 
+      // Conditionally render the inventory level badge, placing it next to the status badge
+    const inventoryLevelBadge = stand.inventory_level ? getInventoryLevelBadge(stand.inventory_level) : '';
+    const badges = `${statusBadge} ${inventoryLevelBadge}`;
+
     return `
       <div style="font-family: system-ui, sans-serif; padding: 4px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
           <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #5e4b3a; line-height: 1.2; max-width: 180px;">${stand.stand_name}</h3>
-          ${statusBadge}
+          ${badges}
         </div>
 
         <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">${getCityState(stand.address)}</p>
