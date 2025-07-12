@@ -273,6 +273,15 @@ export default function StandPage() {
     try {
       setSubmittingCheckIn(true)
 
+      // Map inventory levels to match database schema
+      const inventoryLevelMapping = {
+        'Full': 'High',
+        'Low': 'Low', 
+        'Empty': 'None'
+      }
+      
+      const mappedInventoryLevel = inventoryLevelMapping[checkInData.inventoryLevel as keyof typeof inventoryLevelMapping] || checkInData.inventoryLevel
+
       // Upload photos if any
       let photoUrls: string[] = []
       let suggestedPrimaryUrl: string | null = null
@@ -293,7 +302,7 @@ export default function StandPage() {
         stand_id: stand.id,
         user_id: user?.id || null,
         verification_notes: checkInData.notes.trim() || null,
-        inventory_level: checkInData.inventoryLevel,
+        inventory_level: mappedInventoryLevel,
         confirmed_payment_methods: checkInData.paymentMethods,
         photos: photoUrls,
         suggested_primary_photo: suggestedPrimaryUrl,
@@ -301,27 +310,40 @@ export default function StandPage() {
         check_in_location: checkInData.location
       }
 
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('stand_verifications')
         .insert(checkInRecord)
 
-      if (error) throw error
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        throw insertError
+      }
 
       // Update stand inventory level
-      await supabase
+      const { error: updateError } = await supabase
         .from('firewood_stands')
         .update({ 
-          inventory_level: checkInData.inventoryLevel,
+          inventory_level: mappedInventoryLevel,
           last_verified_date: new Date().toISOString()
         })
         .eq('id', stand.id)
 
+      if (updateError) {
+        console.error('Update error:', updateError)
+        // Don't throw here as the check-in was already saved
+      }
+
       // Update stand payment methods if any were unchecked
-      if (checkInData.paymentMethods.length < stand.payment_methods.length) {
-        await supabase
+      if (checkInData.paymentMethods.length < stand.payment_methods.length && checkInData.paymentMethods.length > 0) {
+        const { error: paymentUpdateError } = await supabase
           .from('firewood_stands')
           .update({ payment_methods: checkInData.paymentMethods })
           .eq('id', stand.id)
+
+        if (paymentUpdateError) {
+          console.error('Payment methods update error:', paymentUpdateError)
+          // Don't throw here as the check-in was already saved
+        }
       }
 
       // Reset form and close modal
@@ -343,7 +365,8 @@ export default function StandPage() {
       alert('Thank you for checking in! Your update helps the community.')
     } catch (error: any) {
       console.error('Error submitting check-in:', error)
-      alert('Failed to submit check-in. Please try again.')
+      console.error('Error details:', error.message, error.details, error.hint)
+      alert(`Failed to submit check-in: ${error.message || 'Please try again.'}`)
     } finally {
       setSubmittingCheckIn(false)
     }
