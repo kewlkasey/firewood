@@ -39,6 +39,16 @@ export default function InteractiveMap() {
   // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Force cleanup of any existing map instance
+      if (map.current) {
+        console.log("Cleaning up existing map before reinitialization...")
+        try {
+          map.current.remove()
+        } catch (error) {
+          console.warn("Error cleaning up existing map:", error)
+        }
+      }
+      
       // Reset refs to ensure fresh initialization
       map.current = null
       markersGroup.current = null
@@ -46,7 +56,7 @@ export default function InteractiveMap() {
       
       // Wait for the DOM element to be available
       const checkAndInitialize = () => {
-        if (mapContainer.current) {
+        if (mapContainer.current && document.contains(mapContainer.current)) {
           initializeMap()
         } else {
           // If the element is not ready, try again after a short delay
@@ -54,7 +64,8 @@ export default function InteractiveMap() {
         }
       }
 
-      checkAndInitialize()
+      // Small delay to ensure DOM is ready after navigation
+      setTimeout(checkAndInitialize, 100)
       fetchStands()
       requestUserLocation()
     }
@@ -68,11 +79,9 @@ export default function InteractiveMap() {
         } catch (error) {
           console.warn("Error cleaning up map:", error)
         }
-        map.current = null
       }
-      if (markersGroup.current) {
-        markersGroup.current = null
-      }
+      map.current = null
+      markersGroup.current = null
       setMapReady(false)
     }
   }, [])
@@ -94,16 +103,23 @@ export default function InteractiveMap() {
 
   const initializeMap = async () => {
     try {
-      // Prevent multiple initializations
-      if (map.current) {
-        console.log("Map already initialized, skipping...")
-        return
-      }
-
       // Ensure DOM element exists and is attached to the document
       if (!mapContainer.current || !document.contains(mapContainer.current)) {
         console.warn("Map container not ready or not attached to DOM")
         return
+      }
+
+      // Clean up any existing map instance before creating new one
+      if (map.current) {
+        console.log("Cleaning up existing map instance before reinitialization...")
+        try {
+          map.current.remove()
+        } catch (error) {
+          console.warn("Error removing existing map:", error)
+        }
+        map.current = null
+        markersGroup.current = null
+        setMapReady(false)
       }
 
       console.log("Starting map initialization...")
