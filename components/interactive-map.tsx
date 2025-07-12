@@ -39,45 +39,61 @@ export default function InteractiveMap() {
   // Initialize map and fetch data on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Aggressive cleanup and reset - always start fresh
+      console.log("Forcing complete map reset...")
+      
       // Force cleanup of any existing map instance
       if (map.current) {
-        console.log("Cleaning up existing map before reinitialization...")
+        console.log("Removing existing map instance...")
         try {
+          map.current.off() // Remove all event listeners
           map.current.remove()
         } catch (error) {
           console.warn("Error cleaning up existing map:", error)
         }
       }
       
-      // Reset refs to ensure fresh initialization
+      // Always reset everything to null
       map.current = null
       markersGroup.current = null
       setMapReady(false)
+      setError(null)
       
-      // Wait for the DOM element to be available
-      const checkAndInitialize = () => {
+      // Wait for DOM to be completely ready and then initialize
+      const initializeWhenReady = () => {
+        // Double-check that container exists and is valid
         if (mapContainer.current && document.contains(mapContainer.current)) {
-          initializeMap()
+          // Ensure we start with a clean slate
+          if (!map.current) {
+            console.log("Starting fresh map initialization...")
+            initializeMap()
+          } else {
+            console.warn("Map reference still exists, forcing cleanup and retry...")
+            map.current = null
+            markersGroup.current = null
+            setTimeout(initializeWhenReady, 100)
+          }
         } else {
-          // If the element is not ready, try again after a short delay
-          setTimeout(checkAndInitialize, 50)
+          // Container not ready, wait and try again
+          setTimeout(initializeWhenReady, 50)
         }
       }
 
-      // Small delay to ensure DOM is ready after navigation
-      setTimeout(checkAndInitialize, 100)
+      // Give DOM time to settle after navigation
+      setTimeout(initializeWhenReady, 150)
       fetchStands()
       requestUserLocation()
     }
 
     // Cleanup function to properly destroy map when component unmounts
     return () => {
+      console.log("Component unmounting - cleaning up map...")
       if (map.current) {
-        console.log("Cleaning up map on component unmount...")
         try {
+          map.current.off() // Remove all event listeners
           map.current.remove()
         } catch (error) {
-          console.warn("Error cleaning up map:", error)
+          console.warn("Error cleaning up map on unmount:", error)
         }
       }
       map.current = null
@@ -103,26 +119,27 @@ export default function InteractiveMap() {
 
   const initializeMap = async () => {
     try {
-      // Ensure DOM element exists and is attached to the document
-      if (!mapContainer.current || !document.contains(mapContainer.current)) {
-        console.warn("Map container not ready or not attached to DOM")
-        return
-      }
-
-      // Clean up any existing map instance before creating new one
+      console.log("Starting map initialization...")
+      
+      // Always ensure we start with a clean slate
       if (map.current) {
-        console.log("Cleaning up existing map instance before reinitialization...")
+        console.log("Found existing map reference, removing it...")
         try {
+          map.current.off()
           map.current.remove()
         } catch (error) {
           console.warn("Error removing existing map:", error)
         }
         map.current = null
         markersGroup.current = null
-        setMapReady(false)
       }
 
-      console.log("Starting map initialization...")
+      // Validate DOM element
+      if (!mapContainer.current || !document.contains(mapContainer.current)) {
+        console.warn("Map container not ready or not attached to DOM")
+        setError("Map container not ready")
+        return
+      }
 
       // Load Leaflet CSS
       if (!document.querySelector('link[href*="leaflet"]')) {
@@ -151,65 +168,54 @@ export default function InteractiveMap() {
         })
       }
 
-      // Wait a bit for Leaflet to be ready
+      // Wait for Leaflet to be ready
       await new Promise(resolve => setTimeout(resolve, 100))
 
-      // Double-check DOM element is still valid before proceeding
+      // Final validation before creating map
       if (!mapContainer.current || !document.contains(mapContainer.current)) {
         console.warn("Map container became invalid during initialization")
+        setError("Map container became invalid")
         return
       }
 
-      // Initialize map with fallback location
-      if (mapContainer.current && !map.current && window.L) {
-        console.log("Initializing map with location:", userLocation)
-        console.log("Map container element:", mapContainer.current)
+      // Create the map - always create fresh
+      console.log("Creating new map instance...")
+      console.log("Map container element:", mapContainer.current)
 
-        try {
-          map.current = window.L.map(mapContainer.current, {
-            center: [userLocation.lat, userLocation.lng],
-            zoom: 9, // Zoom level 9 shows roughly 25-30 mile radius
-            zoomControl: true,
-            attributionControl: true
-          })
-
-          // Add tile layer
-          window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-          }).addTo(map.current)
-
-          // Initialize markers group
-          markersGroup.current = window.L.featureGroup().addTo(map.current)
-
-          console.log("Map initialized successfully")
-          setMapReady(true)
-
-          // Force map to resize to fill container
-          setTimeout(() => {
-            if (map.current && mapContainer.current && document.contains(mapContainer.current)) {
-              map.current.invalidateSize()
-            }
-          }, 100)
-        } catch (mapError) {
-          console.error("Error creating Leaflet map instance:", mapError)
-          setError("Failed to create map instance: " + mapError.message)
-          return
-        }
-      } else {
-        const missingRequirements = []
-        if (!mapContainer.current) missingRequirements.push("mapContainer")
-        if (map.current) missingRequirements.push("mapAlreadyExists")
-        if (!window.L) missingRequirements.push("leafletNotLoaded")
-
-        console.error("Map initialization failed - missing requirements:", missingRequirements.join(", "))
-        console.error("Debug info:", {
-          mapContainer: !!mapContainer.current,
-          mapExists: !!map.current,
-          leafletLoaded: !!window.L,
-          containerInDOM: mapContainer.current ? document.contains(mapContainer.current) : false
+      try {
+        // Clear any existing content in the container
+        mapContainer.current.innerHTML = ''
+        
+        map.current = window.L.map(mapContainer.current, {
+          center: [userLocation.lat, userLocation.lng],
+          zoom: 9,
+          zoomControl: true,
+          attributionControl: true
         })
-        setError("Failed to initialize map - missing requirements: " + missingRequirements.join(", "))
+
+        // Add tile layer
+        window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(map.current)
+
+        // Initialize markers group
+        markersGroup.current = window.L.featureGroup().addTo(map.current)
+
+        console.log("Map initialized successfully")
+        setMapReady(true)
+        setError(null)
+
+        // Force map to resize to fill container
+        setTimeout(() => {
+          if (map.current && mapContainer.current && document.contains(mapContainer.current)) {
+            map.current.invalidateSize()
+          }
+        }, 100)
+      } catch (mapError) {
+        console.error("Error creating Leaflet map instance:", mapError)
+        setError("Failed to create map instance: " + mapError.message)
+        return
       }
     } catch (error) {
       console.error("Error loading map:", error)
