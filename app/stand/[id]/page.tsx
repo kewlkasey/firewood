@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { 
   MapPin, 
   Clock, 
@@ -23,7 +25,11 @@ import {
   AlertCircle,
   Loader2,
   TreesIcon as Tree,
-  User
+  User,
+  Camera,
+  Upload,
+  X,
+  MapPinIcon
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/auth"
@@ -88,13 +94,260 @@ export default function StandPage() {
   const [showVerifierNames, setShowVerifierNames] = useState(false)
   const [carouselIndex, setCarouselIndex] = useState(0)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
+  const [showCheckInModal, setShowCheckInModal] = useState(false)
+  const [checkInData, setCheckInData] = useState({
+    inventoryLevel: '',
+    paymentMethods: [] as string[],
+    photos: [] as File[],
+    suggestedPrimaryPhoto: null as File | null,
+    notes: '',
+    anonymousName: '',
+    location: null as { latitude: number; longitude: number } | null
+  })
+  const [submittingCheckIn, setSubmittingCheckIn] = useState(false)
+  const [checkInCount, setCheckInCount] = useState(0)
+  const [locationPermission, setLocationPermission] = useState<'pending' | 'granted' | 'denied'>('pending')
 
   useEffect(() => {
     if (standId) {
       fetchStandDetails()
       fetchCurrentUser()
+      checkDailyCheckInCount()
     }
   }, [standId])
+
+  const checkDailyCheckInCount = async () => {
+    if (!user) return
+    
+    const today = new Date().toISOString().split('T')[0]
+    const { data, error } = await supabase
+      .from('stand_verifications')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('verified_at', today)
+      .lt('verified_at', new Date(Date.now() + 86400000).toISOString().split('T')[0])
+
+    if (!error && data) {
+      setCheckInCount(data.length)
+    }
+  }
+
+  const requestLocation = async () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCheckInData(prev => ({
+            ...prev,
+            location: {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }
+          }))
+          setLocationPermission('granted')
+        },
+        () => {
+          setLocationPermission('denied')
+        }
+      )
+    } else {
+      setLocationPermission('denied')
+    }
+  }
+
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      const img = new Image()
+      
+      img.onload = () => {
+        // Target dimensions: max 1200px width/height
+        const maxDimension = 1200
+        let { width, height } = img
+        
+        if (width > height && width > maxDimension) {
+          height = (height * maxDimension) / width
+          width = maxDimension
+        } else if (height > maxDimension) {
+          width = (width * maxDimension) / height
+          height = maxDimension
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        canvas.toBlob((blob) => {
+          const compressedFile = new File([blob!], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+          resolve(compressedFile)
+        }, 'image/jpeg', 0.8)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum size is 2MB.`)
+        continue
+      }
+      
+      if (checkInData.photos.length >= 5) {
+        alert('Maximum 5 photos allowed per check-in.')
+        break
+      }
+      
+      const compressedFile = await compressImage(file)
+      setCheckInData(prev => ({
+        ...prev,
+        photos: [...prev.photos, compressedFile]
+      }))
+    }
+  }
+
+  const removePhoto = (index: number) => {
+    setCheckInData(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+      suggestedPrimaryPhoto: prev.suggestedPrimaryPhoto === prev.photos[index] ? null : prev.suggestedPrimaryPhoto
+    }))
+  }
+
+  const setSuggestedPrimary = (photo: File) => {
+    setCheckInData(prev => ({
+      ...prev,
+      suggestedPrimaryPhoto: photo
+    }))
+  }
+
+  const handlePaymentMethodToggle = (method: string) => {
+    setCheckInData(prev => ({
+      ...prev,
+      paymentMethods: prev.paymentMethods.includes(method)
+        ? prev.paymentMethods.filter(m => m !== method)
+        : [...prev.paymentMethods, method]
+    }))
+  }
+
+  const uploadPhotosToStorage = async (photos: File[]): Promise<string[]> => {
+    const uploadedUrls = []
+    
+    for (const photo of photos) {
+      const fileExt = photo.name.split('.').pop()
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `${fileName}`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('stand_photos')
+        .upload(filePath, photo)
+      
+      if (uploadError) {
+        console.error('Error uploading photo:', uploadError)
+        continue
+      }
+      
+      uploadedUrls.push(filePath)
+    }
+    
+    return uploadedUrls
+  }
+
+  const submitCheckIn = async () => {
+    if (user && checkInCount >= 10) {
+      alert('You have reached the daily limit of 10 check-ins.')
+      return
+    }
+
+    if (!checkInData.inventoryLevel) {
+      alert('Please select an inventory level.')
+      return
+    }
+
+    try {
+      setSubmittingCheckIn(true)
+
+      // Upload photos if any
+      let photoUrls: string[] = []
+      let suggestedPrimaryUrl: string | null = null
+      
+      if (checkInData.photos.length > 0) {
+        photoUrls = await uploadPhotosToStorage(checkInData.photos)
+        
+        if (checkInData.suggestedPrimaryPhoto) {
+          const primaryIndex = checkInData.photos.indexOf(checkInData.suggestedPrimaryPhoto)
+          if (primaryIndex !== -1 && photoUrls[primaryIndex]) {
+            suggestedPrimaryUrl = photoUrls[primaryIndex]
+          }
+        }
+      }
+
+      // Insert check-in record
+      const checkInRecord = {
+        stand_id: stand.id,
+        user_id: user?.id || null,
+        verification_notes: checkInData.notes.trim() || null,
+        inventory_level: checkInData.inventoryLevel,
+        confirmed_payment_methods: checkInData.paymentMethods,
+        photos: photoUrls,
+        suggested_primary_photo: suggestedPrimaryUrl,
+        anonymous_name: !user ? checkInData.anonymousName.trim() || null : null,
+        check_in_location: checkInData.location
+      }
+
+      const { error } = await supabase
+        .from('stand_verifications')
+        .insert(checkInRecord)
+
+      if (error) throw error
+
+      // Update stand inventory level
+      await supabase
+        .from('firewood_stands')
+        .update({ 
+          inventory_level: checkInData.inventoryLevel,
+          last_verified_date: new Date().toISOString()
+        })
+        .eq('id', stand.id)
+
+      // Update stand payment methods if any were unchecked
+      if (checkInData.paymentMethods.length < stand.payment_methods.length) {
+        await supabase
+          .from('firewood_stands')
+          .update({ payment_methods: checkInData.paymentMethods })
+          .eq('id', stand.id)
+      }
+
+      // Reset form and close modal
+      setCheckInData({
+        inventoryLevel: '',
+        paymentMethods: [],
+        photos: [],
+        suggestedPrimaryPhoto: null,
+        notes: '',
+        anonymousName: '',
+        location: null
+      })
+      setShowCheckInModal(false)
+      
+      // Refresh stand data
+      await fetchStandDetails()
+      if (user) await checkDailyCheckInCount()
+      
+      alert('Thank you for checking in! Your update helps the community.')
+    } catch (error: any) {
+      console.error('Error submitting check-in:', error)
+      alert('Failed to submit check-in. Please try again.')
+    } finally {
+      setSubmittingCheckIn(false)
+    }
+  }
 
   useEffect(() => {
     if (stand?.latitude && stand?.longitude) {
@@ -913,12 +1166,12 @@ export default function StandPage() {
             </div>
 
             {/* Check In Button */}
-            <button
-              disabled={true}
-              className="w-full px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed font-medium opacity-50"
+            <Button
+              onClick={() => setShowCheckInModal(true)}
+              className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
             >
-              Check In to This Stand 
-            </button>
+              Check In to This Stand
+            </Button>
 
             <p className="text-xs text-[#5e4b3a]/60 text-center">
               Help others find great firewood stands in your community
@@ -995,6 +1248,227 @@ export default function StandPage() {
           </div>
         </div>
       </div>
+
+      {/* Check-In Modal */}
+      <Dialog open={showCheckInModal} onOpenChange={setShowCheckInModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-[#2d5d2a]">
+              Check In to {stand.stand_name}
+            </DialogTitle>
+            <DialogDescription className="text-[#5e4b3a]/80">
+              Help others by sharing current stand conditions. Your check-in will be visible to the community.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Daily Limit Warning */}
+            {user && checkInCount >= 8 && (
+              <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <p className="text-sm text-orange-800">
+                  You have made {checkInCount}/10 check-ins today. 
+                  {checkInCount >= 10 ? ' Daily limit reached.' : ` ${10 - checkInCount} remaining.`}
+                </p>
+              </div>
+            )}
+
+            {/* Inventory Level - Required */}
+            <div>
+              <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                Current Inventory Level *
+              </label>
+              <div className="space-y-2">
+                {['Full', 'Low', 'Empty'].map((level) => (
+                  <label key={level} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="inventoryLevel"
+                      value={level}
+                      checked={checkInData.inventoryLevel === level}
+                      onChange={(e) => setCheckInData(prev => ({ ...prev, inventoryLevel: e.target.value }))}
+                      className="w-4 h-4 text-[#2d5d2a] border-gray-300 focus:ring-[#2d5d2a]"
+                    />
+                    <span className="text-sm text-[#5e4b3a]">
+                      {level === 'Full' && '🟢 Full - Plenty available'}
+                      {level === 'Low' && '🟠 Low - Limited supply'}
+                      {level === 'Empty' && '🔴 Empty - No firewood available'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Methods Confirmation */}
+            <div>
+              <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                Confirm Available Payment Methods
+              </label>
+              <p className="text-xs text-[#5e4b3a]/60 mb-3">
+                Check the payment methods that are currently working at this stand
+              </p>
+              <div className="space-y-2">
+                {stand.payment_methods.map((method) => (
+                  <label key={method} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checkInData.paymentMethods.includes(method)}
+                      onChange={() => handlePaymentMethodToggle(method)}
+                      className="w-4 h-4 text-[#2d5d2a] border-gray-300 rounded focus:ring-[#2d5d2a]"
+                    />
+                    <span className="text-sm text-[#5e4b3a] flex items-center">
+                      <span className="mr-2">{getPaymentIcon(method)}</span>
+                      {method}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Photo Upload */}
+            <div>
+              <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                Photos (Optional)
+              </label>
+              <p className="text-xs text-[#5e4b3a]/60 mb-3">
+                Share up to 5 photos. Max 2MB each. Photos will be compressed automatically.
+              </p>
+              
+              {checkInData.photos.length < 5 && (
+                <div className="mb-4">
+                  <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#2d5d2a] transition-colors">
+                    <div className="text-center">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <span className="text-sm text-gray-600">Click to upload photos</span>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Photo Preview */}
+              {checkInData.photos.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {checkInData.photos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={URL.createObjectURL(photo)}
+                        alt={`Check-in photo ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border"
+                      />
+                      <button
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => setSuggestedPrimary(photo)}
+                        className={`absolute bottom-1 left-1 px-2 py-1 text-xs rounded ${
+                          checkInData.suggestedPrimaryPhoto === photo
+                            ? 'bg-[#2d5d2a] text-white'
+                            : 'bg-white/80 text-gray-700'
+                        }`}
+                      >
+                        {checkInData.suggestedPrimaryPhoto === photo ? '⭐ Primary' : 'Set as Primary'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                Location (Optional)
+              </label>
+              <div className="flex items-center space-x-3">
+                {locationPermission === 'pending' && (
+                  <Button
+                    type="button"
+                    onClick={requestLocation}
+                    variant="outline"
+                    size="sm"
+                    className="border-[#2d5d2a] text-[#2d5d2a]"
+                  >
+                    <MapPinIcon className="h-4 w-4 mr-2" />
+                    Share Location
+                  </Button>
+                )}
+                {locationPermission === 'granted' && checkInData.location && (
+                  <span className="text-sm text-green-600 flex items-center">
+                    <MapPinIcon className="h-4 w-4 mr-1" />
+                    Location shared
+                  </span>
+                )}
+                {locationPermission === 'denied' && (
+                  <span className="text-sm text-gray-500">Location not shared</span>
+                )}
+              </div>
+            </div>
+
+            {/* Anonymous Name (for non-authenticated users) */}
+            {!user && (
+              <div>
+                <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                  Name (Optional)
+                </label>
+                <Input
+                  value={checkInData.anonymousName}
+                  onChange={(e) => setCheckInData(prev => ({ ...prev, anonymousName: e.target.value }))}
+                  placeholder="Enter your name (optional)"
+                  className="border-gray-300 focus:border-[#2d5d2a] focus:ring-[#2d5d2a]"
+                />
+              </div>
+            )}
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                Additional Notes (Optional)
+              </label>
+              <Textarea
+                value={checkInData.notes}
+                onChange={(e) => setCheckInData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Share any additional details about the stand conditions, access, or recommendations..."
+                rows={3}
+                className="border-gray-300 focus:border-[#2d5d2a] focus:ring-[#2d5d2a]"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setShowCheckInModal(false)}
+                className="flex-1 border-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitCheckIn}
+                disabled={submittingCheckIn || !checkInData.inventoryLevel || (user && checkInCount >= 10)}
+                className="flex-1 bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
+              >
+                {submittingCheckIn ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Check-In'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
