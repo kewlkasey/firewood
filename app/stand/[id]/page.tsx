@@ -797,7 +797,7 @@ export default function StandPage() {
                   <User className="h-5 w-5 mr-2" />
                   Stand Owner
                 </CardTitle>
-              </Card              </CardHeader>
+              </CardHeader>
               <CardContent>
                 <p className="font-medium text-[#5e4b3a]">{stand.owner_name}</p>
                 <p className="text-sm text-[#5e4b3a]/60">
