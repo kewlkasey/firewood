@@ -15,6 +15,7 @@ import {
   Phone, 
   CheckCircle, 
   ArrowLeft,
+  ArrowRight,
   Calendar,
   Users,
   Shield,
@@ -85,6 +86,8 @@ export default function StandPage() {
   const [verificationForm, setVerificationForm] = useState<VerificationFormData>({ notes: "" })
   const [mapReady, setMapReady] = useState(false)
   const [showVerifierNames, setShowVerifierNames] = useState(false)
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (standId) {
@@ -98,6 +101,39 @@ export default function StandPage() {
       initializeMap()
     }
   }, [stand])
+
+  // Keyboard navigation for photo modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedPhotoIndex === null) return
+      
+      const allPhotos = []
+      if (stand?.photo_urls && stand.photo_urls.length > 0) {
+        allPhotos.push(...stand.photo_urls)
+      } else if (stand?.photo_url) {
+        allPhotos.push(stand.photo_url)
+      }
+
+      switch (e.key) {
+        case 'Escape':
+          setSelectedPhotoIndex(null)
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          setSelectedPhotoIndex(selectedPhotoIndex > 0 ? selectedPhotoIndex - 1 : allPhotos.length - 1)
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          setSelectedPhotoIndex(selectedPhotoIndex < allPhotos.length - 1 ? selectedPhotoIndex + 1 : 0)
+          break
+      }
+    }
+
+    if (selectedPhotoIndex !== null) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedPhotoIndex, stand])
 
   const fetchCurrentUser = async () => {
     try {
@@ -636,39 +672,166 @@ export default function StandPage() {
               </CardHeader>
               <CardContent>
                 {(stand.photo_urls && stand.photo_urls.length > 0) || stand.photo_url ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Prioritize photo_urls array */}
-                    {stand.photo_urls && stand.photo_urls.length > 0 ? (
-                      stand.photo_urls.map((url, index) => {
-                        // Handle Supabase Storage URLs
-                        const imageUrl = url.startsWith('http') ? url : 
-                          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
-                        return (
-                          <img
-                            key={index}
-                            src={imageUrl}
-                            alt={`${stand.stand_name} - Photo ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        )
-                      })
-                    ) : (
-                      /* Fallback to single photo_url if photo_urls is empty */
-                      stand.photo_url && (
-                        <img
-                          src={stand.photo_url.startsWith('http') ? stand.photo_url : 
-                            `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${stand.photo_url}`}
-                          alt={stand.stand_name}
-                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
+                  <div className="space-y-4">
+                    {(() => {
+                      // Compile all photos into a single array
+                      const allPhotos = []
+                      if (stand.photo_urls && stand.photo_urls.length > 0) {
+                        allPhotos.push(...stand.photo_urls)
+                      } else if (stand.photo_url) {
+                        allPhotos.push(stand.photo_url)
+                      }
+
+                      if (allPhotos.length === 0) return null
+
+                      return (
+                        <>
+                          {/* Carousel for multiple photos */}
+                          {allPhotos.length > 1 ? (
+                            <div className="relative">
+                              <div className="overflow-hidden rounded-lg">
+                                <div 
+                                  className="flex transition-transform duration-300 ease-in-out"
+                                  style={{ transform: `translateX(-${(carouselIndex || 0) * 100}%)` }}
+                                >
+                                  {allPhotos.map((url, index) => {
+                                    const imageUrl = url.startsWith('http') ? url : 
+                                      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
+                                    return (
+                                      <div key={index} className="w-full flex-shrink-0">
+                                        <img
+                                          src={imageUrl}
+                                          alt={`${stand.stand_name} - Photo ${index + 1}`}
+                                          className="w-full h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => setSelectedPhotoIndex(index)}
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none'
+                                          }}
+                                        />
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                              
+                              {/* Carousel Navigation */}
+                              <button
+                                onClick={() => setCarouselIndex(Math.max(0, (carouselIndex || 0) - 1))}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition-all"
+                                disabled={carouselIndex === 0}
+                              >
+                                <ArrowLeft className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setCarouselIndex(Math.min(allPhotos.length - 1, (carouselIndex || 0) + 1))}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition-all"
+                                disabled={carouselIndex === allPhotos.length - 1}
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                              </button>
+
+                              {/* Carousel Dots */}
+                              <div className="flex justify-center mt-4 space-x-2">
+                                {allPhotos.map((_, index) => (
+                                  <button
+                                    key={index}
+                                    onClick={() => setCarouselIndex(index)}
+                                    className={`w-2 h-2 rounded-full transition-all ${
+                                      index === carouselIndex ? 'bg-[#2d5d2a]' : 'bg-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            /* Single photo */
+                            <div className="rounded-lg overflow-hidden">
+                              <img
+                                src={allPhotos[0].startsWith('http') ? allPhotos[0] : 
+                                  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${allPhotos[0]}`}
+                                alt={stand.stand_name}
+                                className="w-full h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setSelectedPhotoIndex(0)}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Thumbnail Grid for Multiple Photos */}
+                          {allPhotos.length > 1 && (
+                            <div className="grid grid-cols-4 gap-2">
+                              {allPhotos.map((url, index) => {
+                                const imageUrl = url.startsWith('http') ? url : 
+                                  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${url}`
+                                return (
+                                  <img
+                                    key={index}
+                                    src={imageUrl}
+                                    alt={`${stand.stand_name} - Thumbnail ${index + 1}`}
+                                    className={`w-full h-16 object-cover rounded cursor-pointer border-2 transition-all ${
+                                      index === carouselIndex ? 'border-[#2d5d2a]' : 'border-gray-200 hover:border-gray-400'
+                                    }`}
+                                    onClick={() => setCarouselIndex(index)}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none'
+                                    }}
+                                  />
+                                )
+                              })}
+                            </div>
+                          )}
+
+                          {/* Photo Modal */}
+                          {selectedPhotoIndex !== null && (
+                            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                              <div className="relative max-w-4xl max-h-full">
+                                <img
+                                  src={allPhotos[selectedPhotoIndex].startsWith('http') ? allPhotos[selectedPhotoIndex] : 
+                                    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/stand_photos/${allPhotos[selectedPhotoIndex]}`}
+                                  alt={`${stand.stand_name} - Photo ${selectedPhotoIndex + 1}`}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                                
+                                {/* Close Button */}
+                                <button
+                                  onClick={() => setSelectedPhotoIndex(null)}
+                                  className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full p-2"
+                                >
+                                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+
+                                {/* Navigation in Modal */}
+                                {allPhotos.length > 1 && (
+                                  <>
+                                    <button
+                                      onClick={() => setSelectedPhotoIndex(selectedPhotoIndex > 0 ? selectedPhotoIndex - 1 : allPhotos.length - 1)}
+                                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-2"
+                                    >
+                                      <ArrowLeft className="h-6 w-6" />
+                                    </button>
+                                    <button
+                                      onClick={() => setSelectedPhotoIndex(selectedPhotoIndex < allPhotos.length - 1 ? selectedPhotoIndex + 1 : 0)}
+                                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-2"
+                                    >
+                                      <ArrowRight className="h-6 w-6" />
+                                    </button>
+                                  </>
+                                )}
+
+                                {/* Photo Counter */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                                  {selectedPhotoIndex + 1} of {allPhotos.length}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )
-                    )}
+                    })()}
                   </div>
                 ) : (
                   /* Show campfire placeholder when no photos */
