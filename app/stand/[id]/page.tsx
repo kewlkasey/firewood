@@ -107,12 +107,14 @@ export default function StandPage() {
   const [submittingCheckIn, setSubmittingCheckIn] = useState(false)
   const [checkInCount, setCheckInCount] = useState(0)
   const [locationPermission, setLocationPermission] = useState<'pending' | 'granted' | 'denied'>('pending')
+  const [recentCheckIns, setRecentCheckIns] = useState<any[]>([])
 
   useEffect(() => {
     if (standId) {
       fetchStandDetails()
       fetchCurrentUser()
       checkDailyCheckInCount()
+      fetchRecentCheckIns()
     }
   }, [standId])
 
@@ -129,6 +131,31 @@ export default function StandPage() {
 
     if (!error && data) {
       setCheckInCount(data.length)
+    }
+  }
+
+  const fetchRecentCheckIns = async () => {
+    const { data, error } = await supabase
+      .from('stand_verifications')
+      .select(`
+        id,
+        verified_at,
+        verification_notes,
+        inventory_level,
+        confirmed_payment_methods,
+        anonymous_name,
+        user_id,
+        profiles:user_id (
+          first_name,
+          last_name
+        )
+      `)
+      .eq('stand_id', standId)
+      .order('verified_at', { ascending: false })
+      .limit(10)
+
+    if (!error && data) {
+      setRecentCheckIns(data)
     }
   }
 
@@ -297,7 +324,7 @@ export default function StandPage() {
         }
       }
 
-      // Insert check-in record
+      // Insert check-in record (location not retained per requirements)
       const checkInRecord = {
         stand_id: stand.id,
         user_id: user?.id || null,
@@ -307,7 +334,7 @@ export default function StandPage() {
         photos: photoUrls,
         suggested_primary_photo: suggestedPrimaryUrl,
         anonymous_name: !user ? checkInData.anonymousName.trim() || null : null,
-        check_in_location: checkInData.location
+        check_in_location: null // Location not retained per requirements
       }
 
       const { error: insertError } = await supabase
@@ -358,8 +385,9 @@ export default function StandPage() {
       })
       setShowCheckInModal(false)
       
-      // Refresh stand data
+      // Refresh all data
       await fetchStandDetails()
+      await fetchRecentCheckIns()
       if (user) await checkDailyCheckInCount()
       
       alert('Thank you for checking in! Your update helps the community.')
@@ -1157,6 +1185,71 @@ export default function StandPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Recent Check-Ins */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-[#5e4b3a] flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  Recent Check-Ins ({recentCheckIns.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {recentCheckIns.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentCheckIns.map((checkIn, index) => (
+                      <div key={checkIn.id} className="border-b border-gray-100 pb-4 last:border-b-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                              <User className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-[#5e4b3a]">
+                                {checkIn.profiles?.first_name && checkIn.profiles?.last_name 
+                                  ? `${checkIn.profiles.first_name} ${checkIn.profiles.last_name}`
+                                  : checkIn.anonymous_name || 'Anonymous'
+                                }
+                              </p>
+                              <p className="text-xs text-[#5e4b3a]/70">
+                                {new Date(checkIn.verified_at).toLocaleDateString()} at {new Date(checkIn.verified_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                          {checkIn.inventory_level && getInventoryLevelBadge(checkIn.inventory_level)}
+                        </div>
+                        
+                        {checkIn.confirmed_payment_methods && checkIn.confirmed_payment_methods.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs text-[#5e4b3a]/70 mb-1">Confirmed payment methods:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {checkIn.confirmed_payment_methods.map((method: string, idx: number) => (
+                                <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded flex items-center">
+                                  <span className="mr-1">{getPaymentIcon(method)}</span>
+                                  {method}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {checkIn.verification_notes && (
+                          <p className="text-sm text-[#5e4b3a]/80 italic">
+                            "{checkIn.verification_notes}"
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-[#5e4b3a]/60">No check-ins yet</p>
+                    <p className="text-sm text-[#5e4b3a]/50">Be the first to check in and help the community!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -1190,7 +1283,14 @@ export default function StandPage() {
 
             {/* Check In Button */}
             <Button
-              onClick={() => setShowCheckInModal(true)}
+              onClick={() => {
+                // Initialize payment methods with current stand methods
+                setCheckInData(prev => ({
+                  ...prev,
+                  paymentMethods: [...stand.payment_methods]
+                }))
+                setShowCheckInModal(true)
+              }}
               className="w-full bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
             >
               Check In to This Stand
@@ -1324,13 +1424,14 @@ export default function StandPage() {
             {/* Payment Methods Confirmation */}
             <div>
               <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                Confirm Available Payment Methods
+                Available Payment Methods
               </label>
               <p className="text-xs text-[#5e4b3a]/60 mb-3">
-                Check the payment methods that are currently working at this stand
+                Update which payment methods are currently working at this stand
               </p>
               <div className="space-y-2">
-                {stand.payment_methods.map((method) => (
+                {/* All possible payment methods */}
+                {['Cash', 'Venmo', 'PayPal', 'Zelle', 'Credit Card', 'Check'].map((method) => (
                   <label key={method} className="flex items-center space-x-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -1341,6 +1442,9 @@ export default function StandPage() {
                     <span className="text-sm text-[#5e4b3a] flex items-center">
                       <span className="mr-2">{getPaymentIcon(method)}</span>
                       {method}
+                      {stand.payment_methods.includes(method) && (
+                        <span className="ml-2 text-xs text-green-600">(currently listed)</span>
+                      )}
                     </span>
                   </label>
                 ))}
@@ -1425,13 +1529,38 @@ export default function StandPage() {
                   </Button>
                 )}
                 {locationPermission === 'granted' && checkInData.location && (
-                  <span className="text-sm text-green-600 flex items-center">
-                    <MapPinIcon className="h-4 w-4 mr-1" />
-                    Location shared
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-green-600 flex items-center">
+                      <MapPinIcon className="h-4 w-4 mr-1" />
+                      Location: {checkInData.location.latitude.toFixed(6)}, {checkInData.location.longitude.toFixed(6)}
+                    </span>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setLocationPermission('pending')
+                        setCheckInData(prev => ({ ...prev, location: null }))
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs px-2 py-1 h-7"
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 )}
                 {locationPermission === 'denied' && (
-                  <span className="text-sm text-gray-500">Location not shared</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-500">Location not shared</span>
+                    <Button
+                      type="button"
+                      onClick={() => setLocationPermission('pending')}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs px-2 py-1 h-7"
+                    >
+                      Try Again
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
