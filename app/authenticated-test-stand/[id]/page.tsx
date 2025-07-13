@@ -150,18 +150,36 @@ export default function AuthenticatedTestStandPage() {
         inventory_level,
         confirmed_payment_methods,
         anonymous_name,
-        user_id,
-        profiles:user_id (
-          first_name,
-          last_name
-        )
+        user_id
       `)
       .eq('stand_id', standId)
       .order('verified_at', { ascending: false })
       .limit(10)
 
     if (!error && data) {
-      setRecentCheckIns(data)
+      // Fetch profile data separately for users with user_id
+      const checkInsWithProfiles = await Promise.all(
+        data.map(async (checkIn) => {
+          if (checkIn.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('id', checkIn.user_id)
+              .single()
+            
+            return {
+              ...checkIn,
+              profiles: profile
+            }
+          }
+          return {
+            ...checkIn,
+            profiles: null
+          }
+        })
+      )
+      
+      setRecentCheckIns(checkInsWithProfiles)
     }
   }
 
