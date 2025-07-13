@@ -1255,7 +1255,6 @@ export default function AuthenticatedTestStandPage() {
             </p>
           </div>
         </div>
-      </div>
 
       {/* Full Check-In Modal - Exactly like the real stands page */}
       <Dialog open={showCheckInModal} onOpenChange={setShowCheckInModal}>
