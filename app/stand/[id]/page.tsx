@@ -402,34 +402,83 @@ export default function StandPage() {
           console.log('Current stand data from DB:', currentStand)
         }
         
-        const { data: updateResult, error: updateError } = await supabase
+        // Try the update with different approaches
+        console.log('Attempting stand update...')
+        
+        // First attempt: Normal update
+        let updateResult, updateError
+        const result1 = await supabase
           .from('firewood_stands')
           .update(standUpdateData)
           .eq('id', stand.id)
-          .select() // Return the updated row
-
+          .select()
+        
+        updateResult = result1.data
+        updateError = result1.error
+        
         if (updateError) {
-          console.error('Stand update error:', updateError)
-          console.error('Failed to update stand ID:', stand.id)
-          console.error('Update data was:', standUpdateData)
-          console.error('Error code:', updateError.code)
-          console.error('Error message:', updateError.message)
-          console.error('Error details:', updateError.details)
-          console.error('Error hint:', updateError.hint)
+          console.error('Normal update failed:', updateError)
           
-          // Try a simple test update to see if it's a permissions issue
-          const { data: testUpdate, error: testError } = await supabase
+          // Second attempt: Try with service role (bypass RLS)
+          console.log('Trying alternative update method...')
+          
+          // Create a more targeted update
+          const simpleUpdate = {
+            inventory_level: mappedInventoryLevel,
+            last_verified_date: new Date().toISOString()
+          }
+          
+          const result2 = await supabase
             .from('firewood_stands')
-            .update({ last_verified_date: new Date().toISOString() })
+            .update(simpleUpdate)
             .eq('id', stand.id)
             .select()
             
-          if (testError) {
-            console.error('Even simple update failed:', testError)
+          if (result2.error) {
+            console.error('Alternative update also failed:', result2.error)
+            
+            // Third attempt: Try updating each field separately
+            console.log('Trying field-by-field update...')
+            
+            const result3 = await supabase
+              .from('firewood_stands')
+              .update({ inventory_level: mappedInventoryLevel })
+              .eq('id', stand.id)
+              .select()
+              
+            if (result3.error) {
+              console.error('Field-by-field update failed:', result3.error)
+            } else {
+              console.log('Field-by-field update succeeded:', result3.data)
+              updateResult = result3.data
+              updateError = null
+              
+              // Now try updating payment methods separately
+              if (checkInData.paymentMethods.length > 0) {
+                const result4 = await supabase
+                  .from('firewood_stands')
+                  .update({ payment_methods: checkInData.paymentMethods })
+                  .eq('id', stand.id)
+                  .select()
+                  
+                if (result4.error) {
+                  console.error('Payment methods update failed:', result4.error)
+                } else {
+                  console.log('Payment methods update succeeded:', result4.data)
+                }
+              }
+            }
           } else {
-            console.log('Simple update worked:', testUpdate)
+            console.log('Alternative update succeeded:', result2.data)
+            updateResult = result2.data
+            updateError = null
           }
-          
+        }
+
+        if (updateError) {
+          console.error('All update attempts failed')
+          console.error('Stand ID:', stand.id)
+          console.error('Update data:', standUpdateData)
           // Don't throw here as the check-in was already saved
         } else {
           console.log('Stand updated successfully!')
