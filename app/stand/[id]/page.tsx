@@ -588,7 +588,9 @@ export default function StandPage() {
 
   const fetchCurrentUser = async () => {
     try {
+      console.log('Fetching current user...')
       const currentUser = await getCurrentUser()
+      console.log('Current user result:', currentUser)
       setUser(currentUser)
     } catch (error) {
       console.error("Error fetching user:", error)
@@ -600,12 +602,16 @@ export default function StandPage() {
       setLoading(true)
       setError(null)
 
+      console.log('Fetching stand details for ID:', standId)
+      
       // Fetch stand details
       const { data: standData, error: standError } = await supabase
         .from("firewood_stands")
         .select("*")
         .eq("id", standId)
         .single()
+        
+      console.log('Stand data fetch result:', { standData, standError })
 
       if (standError) {
         throw standError
