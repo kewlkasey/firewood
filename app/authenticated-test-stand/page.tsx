@@ -1074,7 +1074,7 @@ export default function AuthenticatedTestStandPage() {
 
       {/* Full Check-In Modal - Exactly like the real stands page */}
       <Dialog open={showCheckInModal} onOpenChange={setShowCheckInModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[9999]">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-[#2d5d2a]">
               Check In to {stand.stand_name}
