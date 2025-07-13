@@ -120,7 +120,7 @@ export default function StandPage() {
 
   const checkDailyCheckInCount = async () => {
     if (!user) return
-    
+
     const today = new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
       .from('stand_verifications')
@@ -160,7 +160,7 @@ export default function StandPage() {
               .select('first_name, last_name')
               .eq('id', checkIn.user_id)
               .single()
-            
+
             return {
               ...checkIn,
               profiles: profile
@@ -172,7 +172,7 @@ export default function StandPage() {
           }
         })
       )
-      
+
       setRecentCheckIns(checkInsWithProfiles)
     }
   }
@@ -204,12 +204,12 @@ export default function StandPage() {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
       const img = new Image()
-      
+
       img.onload = () => {
         // Target dimensions: max 1200px width/height
         const maxDimension = 1200
         let { width, height } = img
-        
+
         if (width > height && width > maxDimension) {
           height = (height * maxDimension) / width
           width = maxDimension
@@ -217,11 +217,11 @@ export default function StandPage() {
           width = (width * maxDimension) / height
           height = maxDimension
         }
-        
+
         canvas.width = width
         canvas.height = height
         ctx.drawImage(img, 0, 0, width, height)
-        
+
         canvas.toBlob((blob) => {
           const compressedFile = new File([blob!], file.name, {
             type: 'image/jpeg',
@@ -230,25 +230,25 @@ export default function StandPage() {
           resolve(compressedFile)
         }, 'image/jpeg', 0.8)
       }
-      
+
       img.src = URL.createObjectURL(file)
     })
   }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
-    
+
     for (const file of files) {
       if (file.size > 2 * 1024 * 1024) {
         alert(`${file.name} is too large. Maximum size is 2MB.`)
         continue
       }
-      
+
       if (checkInData.photos.length >= 5) {
         alert('Maximum 5 photos allowed per check-in.')
         break
       }
-      
+
       const compressedFile = await compressImage(file)
       setCheckInData(prev => ({
         ...prev,
@@ -283,24 +283,24 @@ export default function StandPage() {
 
   const uploadPhotosToStorage = async (photos: File[]): Promise<string[]> => {
     const uploadedUrls = []
-    
+
     for (const photo of photos) {
       const fileExt = photo.name.split('.').pop()
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `${fileName}`
-      
+
       const { error: uploadError } = await supabase.storage
         .from('stand_photos')
         .upload(filePath, photo)
-      
+
       if (uploadError) {
         console.error('Error uploading photo:', uploadError)
         continue
       }
-      
+
       uploadedUrls.push(filePath)
     }
-    
+
     return uploadedUrls
   }
 
@@ -324,16 +324,16 @@ export default function StandPage() {
         'Low': 'Low', 
         'Empty': 'None'
       }
-      
+
       const mappedInventoryLevel = inventoryLevelMapping[checkInData.inventoryLevel as keyof typeof inventoryLevelMapping] || checkInData.inventoryLevel
 
       // Upload photos if any
       let photoUrls: string[] = []
       let suggestedPrimaryUrl: string | null = null
-      
+
       if (checkInData.photos.length > 0) {
         photoUrls = await uploadPhotosToStorage(checkInData.photos)
-        
+
         if (checkInData.suggestedPrimaryPhoto) {
           const primaryIndex = checkInData.photos.indexOf(checkInData.suggestedPrimaryPhoto)
           if (primaryIndex !== -1 && photoUrls[primaryIndex]) {
@@ -397,12 +397,12 @@ export default function StandPage() {
         location: null
       })
       setShowCheckInModal(false)
-      
+
       // Refresh all data
       await fetchStandDetails()
       await fetchRecentCheckIns()
       if (user) await checkDailyCheckInCount()
-      
+
       alert('Thank you for checking in! Your update helps the community.')
     } catch (error: any) {
       console.error('Error submitting check-in:', error)
@@ -423,7 +423,7 @@ export default function StandPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedPhotoIndex === null) return
-      
+
       const allPhotos = []
       if (stand?.photo_urls && stand.photo_urls.length > 0) {
         allPhotos.push(...stand.photo_urls)
@@ -1036,7 +1036,7 @@ export default function StandPage() {
                                   })}
                                 </div>
                               </div>
-                              
+
                               {/* Carousel Navigation */}
                               <button
                                 onClick={() => setCarouselIndex(Math.max(0, (carouselIndex || 0) - 1))}
@@ -1116,7 +1116,7 @@ export default function StandPage() {
                                   alt={`${stand.stand_name} - Photo ${selectedPhotoIndex + 1}`}
                                   className="max-w-full max-h-full object-contain"
                                 />
-                                
+
                                 {/* Close Button */}
                                 <button
                                   onClick={() => setSelectedPhotoIndex(null)}
@@ -1237,7 +1237,7 @@ export default function StandPage() {
                           </div>
                           {checkIn.inventory_level && getInventoryLevelBadge(checkIn.inventory_level)}
                         </div>
-                        
+
                         {checkIn.confirmed_payment_methods && checkIn.confirmed_payment_methods.length > 0 && (
                           <div className="mb-2">
                             <p className="text-xs text-[#5e4b3a]/70 mb-1">Confirmed payment methods:</p>
@@ -1251,7 +1251,7 @@ export default function StandPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {checkIn.verification_notes && (
                           <p className="text-sm text-[#5e4b3a]/80 italic">
                             "{checkIn.verification_notes}"
@@ -1390,7 +1390,7 @@ export default function StandPage() {
             </Card>
           </div>
         </div>
-        
+
         {/* Test Authentication Button */}
         <div className="max-w-6xl mx-auto px-4 pb-8">
           <div className="text-center">
@@ -1472,7 +1472,7 @@ export default function StandPage() {
                   const isCurrentlySupported = stand.payment_methods.some(standMethod => 
                     normalizePaymentMethod(standMethod) === method
                   )
-                  
+
                   return (
                     <label key={method} className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -1502,7 +1502,7 @@ export default function StandPage() {
               <p className="text-xs text-[#5e4b3a]/60 mb-3">
                 Share up to 5 photos. Max 2MB each. Photos will be compressed automatically.
               </p>
-              
+
               {checkInData.photos.length < 5 && (
                 <div className="mb-4">
                   <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#2d5d2a] transition-colors">

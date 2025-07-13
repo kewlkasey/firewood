@@ -1022,7 +1022,7 @@ export default function AuthenticatedTestStandPage() {
                   <div className="flex items-center justify-center mb-2">
                     <Users className="h-4 w-4 mr-2 text-[#5e4b3a]" />
                     <span className="text-lg font-semibold text-[#2d5d2a]">
-                      {stand.verification_count}
+                      {stand.verification_count + 1}
                     </span>
                     <span className="text-sm text-[#5e4b3a]/80 ml-1">total check-ins</span>
                   </div>
