@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -126,7 +125,7 @@ export default function AuthenticatedTestStandPage() {
 
   const checkDailyCheckInCount = async () => {
     if (!user) return
-    
+
     const today = new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
       .from('stand_verifications')
@@ -142,7 +141,7 @@ export default function AuthenticatedTestStandPage() {
 
   const fetchRecentCheckIns = async () => {
     console.log('Fetching recent check-ins for stand ID:', standId)
-    
+
     const { data, error } = await supabase
       .from('stand_verifications')
       .select(`
@@ -163,7 +162,7 @@ export default function AuthenticatedTestStandPage() {
     if (!error && data) {
       console.log('Recent check-ins raw data:', data)
       console.log('Number of check-ins found:', data.length)
-      
+
       // Fetch profile data separately for users with user_id
       const checkInsWithProfiles = await Promise.all(
         data.map(async (checkIn) => {
@@ -177,7 +176,7 @@ export default function AuthenticatedTestStandPage() {
             if (profileError) {
               console.log('Profile fetch error for user_id:', checkIn.user_id, profileError)
             }
-            
+
             return {
               ...checkIn,
               profiles: profile
@@ -189,7 +188,7 @@ export default function AuthenticatedTestStandPage() {
           }
         })
       )
-      
+
       console.log('Recent check-ins with profiles:', checkInsWithProfiles)
       setRecentCheckIns(checkInsWithProfiles)
     } else {
@@ -266,7 +265,7 @@ export default function AuthenticatedTestStandPage() {
       if (allVerifications.length > 0) {
         const userIds = allVerifications.slice(0, 10).map(v => v.user_id).filter(Boolean)
         let profileMap = new Map()
-        
+
         if (userIds.length > 0) {
           const { data: verifierProfiles } = await supabase
             .from("profiles")
@@ -357,12 +356,12 @@ export default function AuthenticatedTestStandPage() {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
       const img = new Image()
-      
+
       img.onload = () => {
         // Target dimensions: max 1200px width/height
         const maxDimension = 1200
         let { width, height } = img
-        
+
         if (width > height && width > maxDimension) {
           height = (height * maxDimension) / width
           width = maxDimension
@@ -370,11 +369,11 @@ export default function AuthenticatedTestStandPage() {
           width = (width * maxDimension) / height
           height = maxDimension
         }
-        
+
         canvas.width = width
         canvas.height = height
         ctx.drawImage(img, 0, 0, width, height)
-        
+
         canvas.toBlob((blob) => {
           const compressedFile = new File([blob!], file.name, {
             type: 'image/jpeg',
@@ -383,25 +382,25 @@ export default function AuthenticatedTestStandPage() {
           resolve(compressedFile)
         }, 'image/jpeg', 0.8)
       }
-      
+
       img.src = URL.createObjectURL(file)
     })
   }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
-    
+
     for (const file of files) {
       if (file.size > 2 * 1024 * 1024) {
         alert(`${file.name} is too large. Maximum size is 2MB.`)
         continue
       }
-      
+
       if (checkInData.photos.length >= 5) {
         alert('Maximum 5 photos allowed per check-in.')
         break
       }
-      
+
       const compressedFile = await compressImage(file)
       setCheckInData(prev => ({
         ...prev,
@@ -436,24 +435,24 @@ export default function AuthenticatedTestStandPage() {
 
   const uploadPhotosToStorage = async (photos: File[]): Promise<string[]> => {
     const uploadedUrls = []
-    
+
     for (const photo of photos) {
       const fileExt = photo.name.split('.').pop()
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `${fileName}`
-      
+
       const { error: uploadError } = await supabase.storage
         .from('stand_photos')
         .upload(filePath, photo)
-      
+
       if (uploadError) {
         console.error('Error uploading photo:', uploadError)
         continue
       }
-      
+
       uploadedUrls.push(filePath)
     }
-    
+
     return uploadedUrls
   }
 
@@ -477,16 +476,16 @@ export default function AuthenticatedTestStandPage() {
         'Low': 'Low', 
         'Empty': 'None'
       }
-      
+
       const mappedInventoryLevel = inventoryLevelMapping[checkInData.inventoryLevel as keyof typeof inventoryLevelMapping] || checkInData.inventoryLevel
 
       // Upload photos if any
       let photoUrls: string[] = []
       let suggestedPrimaryUrl: string | null = null
-      
+
       if (checkInData.photos.length > 0) {
         photoUrls = await uploadPhotosToStorage(checkInData.photos)
-        
+
         if (checkInData.suggestedPrimaryPhoto) {
           const primaryIndex = checkInData.photos.indexOf(checkInData.suggestedPrimaryPhoto)
           if (primaryIndex !== -1 && photoUrls[primaryIndex]) {
@@ -536,7 +535,7 @@ export default function AuthenticatedTestStandPage() {
           inventory_level: stand.inventory_level,
           payment_methods: stand.payment_methods
         })
-        
+
         // First, let's try to read the current row to verify we have access
         const { data: currentStand, error: readError } = await supabase
           .from('firewood_stands')
@@ -549,10 +548,10 @@ export default function AuthenticatedTestStandPage() {
         } else {
           console.log('Current stand data from DB:', currentStand)
         }
-        
+
         // Try the update with different approaches
         console.log('Attempting stand update...')
-        
+
         // First attempt: Normal update
         let updateResult, updateError
         const result1 = await supabase
@@ -560,47 +559,47 @@ export default function AuthenticatedTestStandPage() {
           .update(standUpdateData)
           .eq('id', stand.id)
           .select()
-        
+
         updateResult = result1.data
         updateError = result1.error
-        
+
         if (updateError) {
           console.error('Normal update failed:', updateError)
-          
+
           // Second attempt: Try with service role (bypass RLS)
           console.log('Trying alternative update method...')
-          
+
           // Create a more targeted update
           const simpleUpdate = {
             inventory_level: mappedInventoryLevel,
             last_verified_date: new Date().toISOString()
           }
-          
+
           const result2 = await supabase
             .from('firewood_stands')
             .update(simpleUpdate)
             .eq('id', stand.id)
             .select()
-            
+
           if (result2.error) {
             console.error('Alternative update also failed:', result2.error)
-            
+
             // Third attempt: Try updating each field separately
             console.log('Trying field-by-field update...')
-            
+
             const result3 = await supabase
               .from('firewood_stands')
               .update({ inventory_level: mappedInventoryLevel })
               .eq('id', stand.id)
               .select()
-              
+
             if (result3.error) {
               console.error('Field-by-field update failed:', result3.error)
             } else {
               console.log('Field-by-field update succeeded:', result3.data)
               updateResult = result3.data
               updateError = null
-              
+
               // Now try updating payment methods separately
               if (checkInData.paymentMethods.length > 0) {
                 const result4 = await supabase
@@ -608,7 +607,7 @@ export default function AuthenticatedTestStandPage() {
                   .update({ payment_methods: checkInData.paymentMethods })
                   .eq('id', stand.id)
                   .select()
-                  
+
                 if (result4.error) {
                   console.error('Payment methods update failed:', result4.error)
                 } else {
@@ -631,18 +630,18 @@ export default function AuthenticatedTestStandPage() {
         } else {
           console.log('Stand updated successfully!')
           console.log('Updated stand data:', updateResult)
-          
+
           // Verify the update actually took effect
           const { data: verifyUpdate, error: verifyError } = await supabase
             .from('firewood_stands')
             .select('inventory_level, payment_methods, last_verified_date')
             .eq('id', stand.id)
             .single()
-            
+
           if (!verifyError && verifyUpdate) {
             console.log('Verified update in DB:', verifyUpdate)
           }
-          
+
           // Update local state immediately with the new values
           setStand(prevStand => prevStand ? {
             ...prevStand,
@@ -667,14 +666,14 @@ export default function AuthenticatedTestStandPage() {
         location: null
       })
       setShowCheckInModal(false)
-      
+
       // Refresh check-ins and daily count first
       await fetchRecentCheckIns()
       if (user) await checkDailyCheckInCount()
-      
+
       // Then refresh stand details (this will overwrite our local state update, but should now have the updated data)
       await fetchStandDetails()
-      
+
       alert('Thank you for checking in! Your update helps the community.')
     } catch (error: any) {
       console.error('Error submitting check-in:', error)
@@ -695,7 +694,7 @@ export default function AuthenticatedTestStandPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (selectedPhotoIndex === null) return
-      
+
       const allPhotos = []
       if (stand?.photo_urls && stand.photo_urls.length > 0) {
         allPhotos.push(...stand.photo_urls)
@@ -920,11 +919,11 @@ export default function AuthenticatedTestStandPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Directory
             </Button>
-            
+
             <Badge className="bg-purple-100 text-purple-800 border-purple-200">
               🧪 Authenticated Test Page - Stand ID: {standId}
             </Badge>
-            
+
             <Badge className="bg-orange-100 text-orange-800 border-orange-200">
               ⚠️ Check-ins will be saved to database
             </Badge>
@@ -1086,7 +1085,7 @@ export default function AuthenticatedTestStandPage() {
                           </div>
                           {checkIn.inventory_level && getInventoryLevelBadge(checkIn.inventory_level)}
                         </div>
-                        
+
                         {checkIn.confirmed_payment_methods && checkIn.confirmed_payment_methods.length > 0 && (
                           <div className="mb-2">
                             <p className="text-xs text-[#5e4b3a]/70 mb-1">Confirmed payment methods:</p>
@@ -1100,7 +1099,7 @@ export default function AuthenticatedTestStandPage() {
                             </div>
                           </div>
                         )}
-                        
+
                         {checkIn.verification_notes && (
                           <p className="text-sm text-[#5e4b3a]/80 italic">
                             "{checkIn.verification_notes}"
@@ -1322,7 +1321,7 @@ export default function AuthenticatedTestStandPage() {
                   const isCurrentlySupported = stand.payment_methods.some(standMethod => 
                     normalizePaymentMethod(standMethod) === method
                   )
-                  
+
                   return (
                     <label key={method} className="flex items-center space-x-2 cursor-pointer">
                       <input
@@ -1352,7 +1351,7 @@ export default function AuthenticatedTestStandPage() {
               <p className="text-xs text-[#5e4b3a]/60 mb-3">
                 Share up to 5 photos. Max 2MB each. Photos will be compressed automatically.
               </p>
-              
+
               {checkInData.photos.length < 5 && (
                 <div className="mb-4">
                   <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-[#2d5d2a] transition-colors">
