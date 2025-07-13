@@ -1372,6 +1372,22 @@ export default function StandPage() {
             </Card>
           </div>
         </div>
+        
+        {/* Test Authentication Button */}
+        <div className="max-w-6xl mx-auto px-4 pb-8">
+          <div className="text-center">
+            <Button
+              onClick={() => router.push(`/authenticated-test-stand/${standId}`)}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            >
+              Test with Authentication
+            </Button>
+            <p className="text-xs text-gray-500 mt-2">
+              View this stand page with test authentication enabled
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Check-In Modal */}
