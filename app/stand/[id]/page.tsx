@@ -135,6 +135,8 @@ export default function StandPage() {
   }
 
   const fetchRecentCheckIns = async () => {
+    console.log('Fetching recent check-ins for stand ID:', standId)
+    
     const { data, error } = await supabase
       .from('stand_verifications')
       .select(`
@@ -150,18 +152,25 @@ export default function StandPage() {
       .order('verified_at', { ascending: false })
       .limit(10)
 
+    console.log('Stand verifications query result:', { data, error, standId })
+
     if (!error && data) {
       console.log('Recent check-ins raw data:', data)
+      console.log('Number of check-ins found:', data.length)
       
       // Fetch profile data separately for users with user_id
       const checkInsWithProfiles = await Promise.all(
         data.map(async (checkIn) => {
           if (checkIn.user_id) {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('first_name, last_name')
               .eq('id', checkIn.user_id)
               .single()
+
+            if (profileError) {
+              console.log('Profile fetch error for user_id:', checkIn.user_id, profileError)
+            }
 
             return {
               ...checkIn,
@@ -179,6 +188,7 @@ export default function StandPage() {
       setRecentCheckIns(checkInsWithProfiles)
     } else {
       console.error('Error fetching recent check-ins:', error)
+      console.error('Query details - standId:', standId, 'typeof standId:', typeof standId)
     }
   }
 
