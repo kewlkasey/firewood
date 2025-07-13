@@ -1112,6 +1112,23 @@ export default function AuthenticatedTestStandPage() {
         </div>
       </div>
 
+      {/* Navigation to Normal Stand Page */}
+        <div className="max-w-6xl mx-auto px-4 pb-8">
+          <div className="text-center">
+            <Button
+              onClick={() => router.push(`/stand/${standId}`)}
+              variant="outline"
+              className="border-gray-500 text-gray-600 hover:bg-gray-50"
+            >
+              View Normal Stand Page
+            </Button>
+            <p className="text-xs text-gray-500 mt-2">
+              View this stand page without authentication test mode
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Full Check-In Modal - Exactly like the real stands page */}
       <Dialog open={showCheckInModal} onOpenChange={setShowCheckInModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto z-[9999]">
