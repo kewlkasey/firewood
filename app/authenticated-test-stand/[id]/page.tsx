@@ -157,6 +157,8 @@ export default function AuthenticatedTestStandPage() {
       .limit(10)
 
     if (!error && data) {
+      console.log('Recent check-ins raw data:', data)
+      
       // Fetch profile data separately for users with user_id
       const checkInsWithProfiles = await Promise.all(
         data.map(async (checkIn) => {
@@ -179,7 +181,10 @@ export default function AuthenticatedTestStandPage() {
         })
       )
       
+      console.log('Recent check-ins with profiles:', checkInsWithProfiles)
       setRecentCheckIns(checkInsWithProfiles)
+    } else {
+      console.error('Error fetching recent check-ins:', error)
     }
   }
 
@@ -233,10 +238,10 @@ export default function AuthenticatedTestStandPage() {
         }
       }
 
-      // Fetch verification data
+      // Fetch verification data including anonymous check-ins
       const { data: verificationData, error: verificationError } = await supabase
         .from("stand_verifications")
-        .select("id, verified_at, user_id")
+        .select("id, verified_at, user_id, anonymous_name")
         .eq("stand_id", standId)
         .order("verified_at", { ascending: false })
 
@@ -244,33 +249,47 @@ export default function AuthenticatedTestStandPage() {
         console.error("Error fetching verifications:", verificationError)
       }
 
-      // Fetch profiles for verifiers separately
+      // Fetch profiles for verifiers separately and include anonymous users
       const allVerifications = verificationData || []
       const recentVerifiers = []
 
       if (allVerifications.length > 0) {
-        const userIds = allVerifications.slice(0, 10).map(v => v.user_id)
-        const { data: verifierProfiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name")
-          .in("id", userIds)
+        const userIds = allVerifications.slice(0, 10).map(v => v.user_id).filter(Boolean)
+        let profileMap = new Map()
+        
+        if (userIds.length > 0) {
+          const { data: verifierProfiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", userIds)
 
-        const profileMap = new Map()
-        if (verifierProfiles) {
-          verifierProfiles.forEach(profile => {
-            profileMap.set(profile.id, profile)
-          })
+          if (verifierProfiles) {
+            verifierProfiles.forEach(profile => {
+              profileMap.set(profile.id, profile)
+            })
+          }
         }
 
         allVerifications.slice(0, 10).forEach(verification => {
-          const profile = profileMap.get(verification.user_id)
-          if (profile) {
+          if (verification.user_id) {
+            const profile = profileMap.get(verification.user_id)
+            if (profile) {
+              recentVerifiers.push({
+                id: profile.id,
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                verified_at: verification.verified_at,
+                is_submitter: verification.user_id === standData.submitted_by_user_id
+              })
+            }
+          } else {
+            // Include anonymous check-ins
             recentVerifiers.push({
-              id: profile.id,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
+              id: `anonymous-${verification.id}`,
+              first_name: verification.anonymous_name || 'Anonymous',
+              last_name: '',
               verified_at: verification.verified_at,
-              is_submitter: verification.user_id === standData.submitted_by_user_id
+              is_submitter: false
             })
           }
         })
@@ -976,31 +995,6 @@ export default function AuthenticatedTestStandPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Authenticated User Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#5e4b3a] flex items-center">
-                  <div className="w-5 h-5 mr-2 bg-[#2d5d2a] text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    TU
-                  </div>
-                  Authenticated User
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="font-medium text-[#5e4b3a]">{user?.first_name} {user?.last_name}</p>
-                  <p className="text-sm text-[#5e4b3a]/70">{user?.email}</p>
-                  <Badge className="bg-green-100 text-green-800 border-green-200">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Logged In
-                  </Badge>
-                  <p className="text-xs text-[#5e4b3a]/60 mt-3">
-                    Daily check-ins: {checkInCount}/10
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Check-In Section */}
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
@@ -1075,6 +1069,27 @@ export default function AuthenticatedTestStandPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Stand Submitter Info */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Stand Submitted By</h3>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-8 h-8 bg-[#2d5d2a] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      TU
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-[#5e4b3a]">
+                        {stand.owner_name}
+                      </div>
+                      <div className="text-xs text-[#5e4b3a]/70">
+                        Submitted on {new Date(stand.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-[#5e4b3a]/60">
+                        Total contributions: 1 check-in/submission
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
