@@ -334,7 +334,8 @@ export default function StandPage() {
         photos: photoUrls,
         suggested_primary_photo: suggestedPrimaryUrl,
         anonymous_name: !user ? checkInData.anonymousName.trim() || null : null,
-        check_in_location: null // Location not retained per requirements
+        check_in_location: null, // Location not retained per requirements
+        verified_at: new Date().toISOString()
       }
 
       const { error: insertError } = await supabase
@@ -346,31 +347,25 @@ export default function StandPage() {
         throw insertError
       }
 
-      // Update stand inventory level
+      // Update stand inventory level and payment methods
+      const standUpdateData: any = { 
+        inventory_level: mappedInventoryLevel,
+        last_verified_date: new Date().toISOString()
+      }
+
+      // Always update payment methods with the confirmed ones from check-in
+      if (checkInData.paymentMethods.length > 0) {
+        standUpdateData.payment_methods = checkInData.paymentMethods
+      }
+
       const { error: updateError } = await supabase
         .from('firewood_stands')
-        .update({ 
-          inventory_level: mappedInventoryLevel,
-          last_verified_date: new Date().toISOString()
-        })
+        .update(standUpdateData)
         .eq('id', stand.id)
 
       if (updateError) {
         console.error('Update error:', updateError)
         // Don't throw here as the check-in was already saved
-      }
-
-      // Update stand payment methods if any were unchecked
-      if (checkInData.paymentMethods.length < stand.payment_methods.length && checkInData.paymentMethods.length > 0) {
-        const { error: paymentUpdateError } = await supabase
-          .from('firewood_stands')
-          .update({ payment_methods: checkInData.paymentMethods })
-          .eq('id', stand.id)
-
-        if (paymentUpdateError) {
-          console.error('Payment methods update error:', paymentUpdateError)
-          // Don't throw here as the check-in was already saved
-        }
       }
 
       // Reset form and close modal
@@ -658,6 +653,12 @@ export default function StandPage() {
     return "💳"
   }
 
+  const normalizePaymentMethod = (method: string) => {
+    // Convert "Cash Box" to "Cash" for display
+    if (method.toLowerCase().includes("cash")) return "Cash"
+    return method
+  }
+
   const formatPhoneNumber = (phone: string) => {
     const cleaned = phone.replace(/\D/g, "")
     if (cleaned.length === 10) {
@@ -889,7 +890,7 @@ export default function StandPage() {
                       {stand.payment_methods.map((method, index) => (
                         <span key={index} className="inline-flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded">
                           <span>{getPaymentIcon(method)}</span>
-                          {method}
+                          {normalizePaymentMethod(method)}
                         </span>
                       ))}
                     </div>
@@ -1226,7 +1227,7 @@ export default function StandPage() {
                               {checkIn.confirmed_payment_methods.map((method: string, idx: number) => (
                                 <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded flex items-center">
                                   <span className="mr-1">{getPaymentIcon(method)}</span>
-                                  {method}
+                                  {normalizePaymentMethod(method)}
                                 </span>
                               ))}
                             </div>
@@ -1284,10 +1285,11 @@ export default function StandPage() {
             {/* Check In Button */}
             <Button
               onClick={() => {
-                // Initialize payment methods with current stand methods
+                // Initialize payment methods with current stand methods (normalized)
+                const normalizedPaymentMethods = stand.payment_methods.map(method => normalizePaymentMethod(method))
                 setCheckInData(prev => ({
                   ...prev,
-                  paymentMethods: [...stand.payment_methods]
+                  paymentMethods: normalizedPaymentMethods
                 }))
                 setShowCheckInModal(true)
               }}
@@ -1431,23 +1433,30 @@ export default function StandPage() {
               </p>
               <div className="space-y-2">
                 {/* All possible payment methods */}
-                {['Cash', 'Venmo', 'PayPal', 'Zelle', 'Credit Card', 'Check'].map((method) => (
-                  <label key={method} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checkInData.paymentMethods.includes(method)}
-                      onChange={() => handlePaymentMethodToggle(method)}
-                      className="w-4 h-4 text-[#2d5d2a] border-gray-300 rounded focus:ring-[#2d5d2a]"
-                    />
-                    <span className="text-sm text-[#5e4b3a] flex items-center">
-                      <span className="mr-2">{getPaymentIcon(method)}</span>
-                      {method}
-                      {stand.payment_methods.includes(method) && (
-                        <span className="ml-2 text-xs text-green-600">(currently listed)</span>
-                      )}
-                    </span>
-                  </label>
-                ))}
+                {['Cash', 'Venmo', 'PayPal', 'Zelle', 'Credit Card', 'Check'].map((method) => {
+                  // Check if this method is currently supported (normalize for comparison)
+                  const isCurrentlySupported = stand.payment_methods.some(standMethod => 
+                    normalizePaymentMethod(standMethod) === method
+                  )
+                  
+                  return (
+                    <label key={method} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checkInData.paymentMethods.includes(method)}
+                        onChange={() => handlePaymentMethodToggle(method)}
+                        className="w-4 h-4 text-[#2d5d2a] border-gray-300 rounded focus:ring-[#2d5d2a]"
+                      />
+                      <span className="text-sm text-[#5e4b3a] flex items-center">
+                        <span className="mr-2">{getPaymentIcon(method)}</span>
+                        {method}
+                        {isCurrentlySupported && (
+                          <span className="ml-2 text-xs text-green-600">(currently listed)</span>
+                        )}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
             </div>
 
