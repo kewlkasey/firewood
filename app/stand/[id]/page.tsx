@@ -389,6 +389,19 @@ export default function StandPage() {
           payment_methods: stand.payment_methods
         })
         
+        // First, let's try to read the current row to verify we have access
+        const { data: currentStand, error: readError } = await supabase
+          .from('firewood_stands')
+          .select('id, inventory_level, payment_methods, last_verified_date')
+          .eq('id', stand.id)
+          .single()
+
+        if (readError) {
+          console.error('Cannot read current stand data:', readError)
+        } else {
+          console.log('Current stand data from DB:', currentStand)
+        }
+        
         const { data: updateResult, error: updateError } = await supabase
           .from('firewood_stands')
           .update(standUpdateData)
@@ -403,10 +416,35 @@ export default function StandPage() {
           console.error('Error message:', updateError.message)
           console.error('Error details:', updateError.details)
           console.error('Error hint:', updateError.hint)
+          
+          // Try a simple test update to see if it's a permissions issue
+          const { data: testUpdate, error: testError } = await supabase
+            .from('firewood_stands')
+            .update({ last_verified_date: new Date().toISOString() })
+            .eq('id', stand.id)
+            .select()
+            
+          if (testError) {
+            console.error('Even simple update failed:', testError)
+          } else {
+            console.log('Simple update worked:', testUpdate)
+          }
+          
           // Don't throw here as the check-in was already saved
         } else {
           console.log('Stand updated successfully!')
           console.log('Updated stand data:', updateResult)
+          
+          // Verify the update actually took effect
+          const { data: verifyUpdate, error: verifyError } = await supabase
+            .from('firewood_stands')
+            .select('inventory_level, payment_methods, last_verified_date')
+            .eq('id', stand.id)
+            .single()
+            
+          if (!verifyError && verifyUpdate) {
+            console.log('Verified update in DB:', verifyUpdate)
+          }
           
           // Update local state immediately with the new values
           setStand(prevStand => prevStand ? {
