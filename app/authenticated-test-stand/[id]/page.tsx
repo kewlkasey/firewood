@@ -509,24 +509,34 @@ export default function AuthenticatedTestStandPage() {
       }
 
       // Update stand inventory level and payment methods
-      const standUpdateData: any = { 
-        inventory_level: mappedInventoryLevel,
-        last_verified_date: new Date().toISOString()
-      }
+      if (stand?.id) {
+        const standUpdateData: any = { 
+          inventory_level: mappedInventoryLevel,
+          last_verified_date: new Date().toISOString()
+        }
 
-      // Always update payment methods with the confirmed ones from check-in
-      if (checkInData.paymentMethods.length > 0) {
-        standUpdateData.payment_methods = checkInData.paymentMethods
-      }
+        // Always update payment methods with the confirmed ones from check-in
+        if (checkInData.paymentMethods.length > 0) {
+          standUpdateData.payment_methods = checkInData.paymentMethods
+        }
 
-      const { error: updateError } = await supabase
-        .from('firewood_stands')
-        .update(standUpdateData)
-        .eq('id', stand!.id)
+        console.log('Updating stand with data:', standUpdateData)
+        
+        const { error: updateError } = await supabase
+          .from('firewood_stands')
+          .update(standUpdateData)
+          .eq('id', stand.id)
 
-      if (updateError) {
-        console.error('Update error:', updateError)
-        // Don't throw here as the check-in was already saved
+        if (updateError) {
+          console.error('Stand update error:', updateError)
+          console.error('Failed to update stand ID:', stand.id)
+          console.error('Update data was:', standUpdateData)
+          // Don't throw here as the check-in was already saved
+        } else {
+          console.log('Stand updated successfully')
+        }
+      } else {
+        console.error('Stand object or ID is missing, cannot update stand')
       }
 
       // Reset form and close modal
