@@ -921,8 +921,8 @@ export default function AuthenticatedTestStandPage() {
                       <div key={checkIn.id} className="border-b border-gray-100 pb-4 last:border-b-0">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                              <User className="h-4 w-4 text-gray-600" />
+                            <div className="w-8 h-8 bg-[#2d5d2a] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                              TU
                             </div>
                             <div>
                               <p className="text-sm font-medium text-[#5e4b3a]">
@@ -963,7 +963,9 @@ export default function AuthenticatedTestStandPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                    <div className="w-12 h-12 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-3">
+                      TU
+                    </div>
                     <p className="text-[#5e4b3a]/60">No check-ins yet</p>
                     <p className="text-sm text-[#5e4b3a]/50">Be the first to check in and help the community!</p>
                   </div>
@@ -978,7 +980,9 @@ export default function AuthenticatedTestStandPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-[#5e4b3a] flex items-center">
-                  <User className="h-5 w-5 mr-2" />
+                  <div className="w-5 h-5 mr-2 bg-[#2d5d2a] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    TU
+                  </div>
                   Authenticated User
                 </CardTitle>
               </CardHeader>
@@ -1050,8 +1054,8 @@ export default function AuthenticatedTestStandPage() {
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-medium text-[#5e4b3a] mb-2">Last Check-In By</h3>
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                        <User className="h-4 w-4 text-gray-600" />
+                      <div className="w-8 h-8 bg-[#2d5d2a] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        TU
                       </div>
                       <div>
                         <div className="text-sm font-medium text-[#5e4b3a]">
