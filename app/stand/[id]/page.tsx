@@ -151,6 +151,8 @@ export default function StandPage() {
       .limit(10)
 
     if (!error && data) {
+      console.log('Recent check-ins raw data:', data)
+      
       // Fetch profile data separately for users with user_id
       const checkInsWithProfiles = await Promise.all(
         data.map(async (checkIn) => {
@@ -173,7 +175,10 @@ export default function StandPage() {
         })
       )
 
+      console.log('Recent check-ins with profiles:', checkInsWithProfiles)
       setRecentCheckIns(checkInsWithProfiles)
+    } else {
+      console.error('Error fetching recent check-ins:', error)
     }
   }
 
@@ -495,10 +500,10 @@ export default function StandPage() {
         }
       }
 
-      // Fetch verification data
+      // Fetch verification data including anonymous check-ins
       const { data: verificationData, error: verificationError } = await supabase
         .from("stand_verifications")
-        .select("id, verified_at, user_id")
+        .select("id, verified_at, user_id, anonymous_name")
         .eq("stand_id", standId)
         .order("verified_at", { ascending: false })
 
@@ -506,33 +511,47 @@ export default function StandPage() {
         console.error("Error fetching verifications:", verificationError)
       }
 
-      // Fetch profiles for verifiers separately
+      // Fetch profiles for verifiers separately and include anonymous users
       const allVerifications = verificationData || []
       const recentVerifiers = []
 
       if (allVerifications.length > 0) {
-        const userIds = allVerifications.slice(0, 10).map(v => v.user_id)
-        const { data: verifierProfiles } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name")
-          .in("id", userIds)
+        const userIds = allVerifications.slice(0, 10).map(v => v.user_id).filter(Boolean)
+        let profileMap = new Map()
+        
+        if (userIds.length > 0) {
+          const { data: verifierProfiles } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", userIds)
 
-        const profileMap = new Map()
-        if (verifierProfiles) {
-          verifierProfiles.forEach(profile => {
-            profileMap.set(profile.id, profile)
-          })
+          if (verifierProfiles) {
+            verifierProfiles.forEach(profile => {
+              profileMap.set(profile.id, profile)
+            })
+          }
         }
 
         allVerifications.slice(0, 10).forEach(verification => {
-          const profile = profileMap.get(verification.user_id)
-          if (profile) {
+          if (verification.user_id) {
+            const profile = profileMap.get(verification.user_id)
+            if (profile) {
+              recentVerifiers.push({
+                id: profile.id,
+                first_name: profile.first_name,
+                last_name: profile.last_name,
+                verified_at: verification.verified_at,
+                is_submitter: verification.user_id === standData.submitted_by_user_id
+              })
+            }
+          } else {
+            // Include anonymous check-ins
             recentVerifiers.push({
-              id: profile.id,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
+              id: `anonymous-${verification.id}`,
+              first_name: verification.anonymous_name || 'Anonymous',
+              last_name: '',
               verified_at: verification.verified_at,
-              is_submitter: verification.user_id === standData.submitted_by_user_id
+              is_submitter: false
             })
           }
         })
