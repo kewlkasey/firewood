@@ -520,23 +520,43 @@ export default function AuthenticatedTestStandPage() {
           standUpdateData.payment_methods = checkInData.paymentMethods
         }
 
-        console.log('Updating stand with data:', standUpdateData)
+        console.log('About to update stand:', stand.id)
+        console.log('Update data:', standUpdateData)
+        console.log('Current stand data before update:', {
+          inventory_level: stand.inventory_level,
+          payment_methods: stand.payment_methods
+        })
         
-        const { error: updateError } = await supabase
+        const { data: updateResult, error: updateError } = await supabase
           .from('firewood_stands')
           .update(standUpdateData)
           .eq('id', stand.id)
+          .select() // Return the updated row
 
         if (updateError) {
           console.error('Stand update error:', updateError)
           console.error('Failed to update stand ID:', stand.id)
           console.error('Update data was:', standUpdateData)
+          console.error('Error code:', updateError.code)
+          console.error('Error message:', updateError.message)
+          console.error('Error details:', updateError.details)
+          console.error('Error hint:', updateError.hint)
           // Don't throw here as the check-in was already saved
         } else {
-          console.log('Stand updated successfully')
+          console.log('Stand updated successfully!')
+          console.log('Updated stand data:', updateResult)
+          
+          // Update local state immediately with the new values
+          setStand(prevStand => prevStand ? {
+            ...prevStand,
+            inventory_level: mappedInventoryLevel,
+            payment_methods: checkInData.paymentMethods.length > 0 ? checkInData.paymentMethods : prevStand.payment_methods,
+            last_verified_date: new Date().toISOString()
+          } : null)
         }
       } else {
         console.error('Stand object or ID is missing, cannot update stand')
+        console.error('Stand object:', stand)
       }
 
       // Reset form and close modal
@@ -551,10 +571,12 @@ export default function AuthenticatedTestStandPage() {
       })
       setShowCheckInModal(false)
       
-      // Refresh all data
-      await fetchStandDetails()
+      // Refresh check-ins and daily count first
       await fetchRecentCheckIns()
       if (user) await checkDailyCheckInCount()
+      
+      // Then refresh stand details (this will overwrite our local state update, but should now have the updated data)
+      await fetchStandDetails()
       
       alert('Thank you for checking in! Your update helps the community.')
     } catch (error: any) {
