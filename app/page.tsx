@@ -3,6 +3,7 @@ import Image from "next/image"
 import { MapPin, ChevronRight, TreesIcon as Tree, Truck, Wallet, Shield, Users, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import InteractiveMap from "../components/interactive-map"
+import UserNavigation from "@/components/user-navigation"
 
 export default function Page() {
   return (
@@ -26,17 +27,7 @@ export default function Page() {
             </Link>
           </nav>
           <div className="hidden md:flex gap-3">
-            <Link href="/login">
-              <Button
-                variant="outline"
-                className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10 bg-transparent"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">Sign Up</Button>
-            </Link>
+            <UserNavigation />
           </div>
           <div className="md:hidden">
             <svg
@@ -145,7 +136,7 @@ export default function Page() {
           </div>
         </section>
 
-        
+
 
         {/* For Stand Owners Section */}
         <section className="py-16 md:py-24 bg-[#f5f1e8]">
