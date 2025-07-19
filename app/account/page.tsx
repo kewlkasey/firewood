@@ -1,10 +1,9 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Tree, User, Mail, Calendar, ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Calendar, Mail, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -35,7 +34,7 @@ export default function AccountPage() {
         router.push('/login')
         return
       }
-      
+
       setUser(currentUser)
       const userProfile = await getUserProfile(currentUser.id)
       setProfile(userProfile)
@@ -79,7 +78,6 @@ export default function AccountPage() {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Tree className="h-6 w-6 text-[#2d5d2a]" />
               <span className="text-xl font-bold text-[#2d5d2a]">FindLocalFirewood</span>
             </Link>
           </div>
@@ -129,7 +127,7 @@ export default function AccountPage() {
                 <h3 className="text-lg font-semibold text-[#2d5d2a] border-b border-gray-200 pb-2">
                   Account Information
                 </h3>
-                
+
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <Mail className="w-5 h-5 text-[#2d5d2a]" />
                   <div>

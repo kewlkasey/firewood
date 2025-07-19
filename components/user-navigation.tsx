@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -21,7 +20,7 @@ interface UserProfile {
   last_name?: string
 }
 
-export default function UserNavigation() {
+export function UserNavigation() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -128,3 +127,6 @@ export default function UserNavigation() {
     </div>
   )
 }
+
+// Export alias for backward compatibility
+export { UserNavigation as UserNav }
