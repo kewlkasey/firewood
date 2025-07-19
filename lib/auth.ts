@@ -34,7 +34,7 @@ export async function registerUser(data: RegisterData) {
           first_name: data.firstName,
           last_name: data.lastName,
         },
-        emailRedirectTo: `https://findlocalfirewood.com/auth/confirm`,
+        emailRedirectTo: `${process.env.NODE_ENV === 'production' ? 'https://findlocalfirewood.com' : 'https://' + process.env.REPL_SLUG + '--' + process.env.REPL_OWNER + '.replit.app'}/auth/confirm`,
       },
     })
 
