@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser } from "@/lib/auth"
+import { UserNavigation } from "@/components/user-navigation"
 
 interface StandDetails {
   id: string
@@ -931,21 +932,7 @@ export default function StandPage() {
               About
             </button>
           </nav>
-          <div className="hidden md:flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/login")}
-              className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10 bg-transparent"
-            >
-              Login
-            </Button>
-            <Button 
-              onClick={() => router.push("/register")}
-              className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white"
-            >
-              Sign Up
-            </Button>
-          </div>
+          <UserNavigation />
           <div className="md:hidden">
             <svg
               xmlns="http://www.w3.org/2000/svg"
