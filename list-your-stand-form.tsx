@@ -228,7 +228,7 @@ export default function ListYourStandForm() {
             <Tree className="h-8 w-8 text-[#2d5d2a]" />
             <span className="text-2xl font-bold text-[#2d5d2a]">FindLocalFirewood</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-4">List Your Firewood Stand</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-[#5e4b3a] mb-4">List A Firewood Stand</h1>
           <p className="text-lg text-[#5e4b3a]/80 mb-2">
             Share your stand with travelers and neighbors in your community
           </p>
@@ -239,22 +239,6 @@ export default function ListYourStandForm() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 md:p-8 space-y-8">
-          {/* Stand Ownership Question */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="standOwnership"
-                checked={isOwnerStand === true}
-                onChange={(e) => setIsOwnerStand(e.target.checked)}
-                className="w-4 h-4 text-[#2d5d2a] border-gray-300 rounded focus:ring-[#2d5d2a]"
-              />
-              <label htmlFor="standOwnership" className="text-sm text-[#5e4b3a] cursor-pointer">
-                This is my stand (I own/operate this firewood stand)
-              </label>
-            </div>
-          </div>
-
           {/* Basic Information */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-[#5e4b3a] border-b border-[#f5f1e8] pb-2">Basic Information</h2>
@@ -330,6 +314,22 @@ export default function ListYourStandForm() {
 
             {/* Enhanced Address Input */}
             <AddressInput value={formData.address} onChange={handleAddressChange} error={errors.address} required />
+
+            {/* Stand Ownership Question */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="standOwnership"
+                  checked={isOwnerStand === true}
+                  onChange={(e) => setIsOwnerStand(e.target.checked)}
+                  className="w-4 h-4 text-[#2d5d2a] border-gray-300 rounded focus:ring-[#2d5d2a]"
+                />
+                <label htmlFor="standOwnership" className="text-sm text-[#5e4b3a] cursor-pointer">
+                  This is my stand (I own/operate this firewood stand)
+                </label>
+              </div>
+            </div>
           </div>
 
           {/* Wood Types */}
