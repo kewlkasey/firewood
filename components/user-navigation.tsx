@@ -128,5 +128,8 @@ export function UserNavigation() {
   )
 }
 
+// Default export for main import
+export default UserNavigation
+
 // Export alias for backward compatibility
 export { UserNavigation as UserNav }
