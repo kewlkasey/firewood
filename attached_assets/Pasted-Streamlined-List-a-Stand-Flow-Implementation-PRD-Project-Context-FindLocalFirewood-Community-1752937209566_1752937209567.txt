@@ -1,0 +1,237 @@
+Streamlined "List a Stand" Flow - Implementation PRD
+Project Context
+FindLocalFirewood - Community-driven platform for discovering honor-system roadside firewood stands
+Current Tech Stack
+Frontend: Next.js 15 with TypeScript, Tailwind CSS, Radix UI components
+Backend: Supabase (PostgreSQL + Authentication)
+Maps: Leaflet for interactive maps, Mapbox for geocoding/validation
+Deployment: Vercel (production) and Github, Replit (development)
+Problem Statement
+Current single-page listing form creates barriers to community participation:
+Mobile UX is poor (90% of expected usage)
+Complex wood type selection doesn't serve buyer needs
+Too many required fields cause abandonment
+Cold data-entry feel discourages listings
+User Stories & Implementation Requirements
+Epic: Mobile-First Listing Experience
+As a community member, I want to quickly list a firewood stand while I'm physically at the location, so that other people can find affordable firewood.
+
+Step 1: Location Input
+User Story
+As a stand lister, I want to easily specify where my stand is located using my phone's GPS, so that buyers can find it accurately without typing addresses.
+Acceptance Criteria
+Auto-detect if location services are enabled
+Primary method: GPS location with drag-to-adjust pin interface
+Fallback method: Click-to-pin on map for users without GPS
+Location is the ONLY required field in entire flow
+Cannot proceed without valid coordinates
+
+UI Requirements:
+Large map viewport (70% of screen height on mobile)
+Friendly headline: "Where's your stand located?"
+GPS permission request with explanation
+Address validation feedback
+Disabled "Next" button until valid location set
+Technical Details:
+Use existing Leaflet integration
+Validate coordinates with Mapbox geocoding
+Store both location (POINT) and address (TEXT) fields
+Handle GPS denial gracefully with manual pin placement
+
+Step 2: Photo Upload
+User Story
+As a stand lister, I want to add a photo of my stand so that buyers can easily recognize it when they arrive.
+Acceptance Criteria
+Photo upload is optional but heavily encouraged
+Mobile camera integration (capture or gallery)
+Single photo limit for initial listing
+Large "Add Photo" button with smaller "Skip for now" option
+Progress indicator shows "Step 2 of 4"
+
+// Integration needs:
+// - Mobile camera/gallery access
+// - Image compression for mobile uploads
+// - Temporary storage (current constraint noted)
+
+UI Requirements:
+Encouraging headline: "Show people what to expect!"
+Large photo upload area with camera icon
+Image preview after selection
+Skip button always enabled
+Technical Details:
+Handle both camera capture and gallery selection
+Compress images client-side before upload
+Placeholder implementation for storage constraints
+
+Step 3: Stand Details
+User Story
+As a stand lister, I want to describe my firewood quality and pricing so that buyers know what to expect, but I don't want to get overwhelmed with too many technical questions.
+Acceptance Criteria
+All fields optional (can skip entire step)
+Simplified wood categories focused on burn quality
+Bundle size options with visual indicators
+Flexible pricing with "Varies" option
+Simple staffing level indication
+
+Field Specifications:
+Stand Name (Optional):
+Text input with placeholder: "e.g., Johnson's Firewood Stand"
+If empty, auto-generate from coordinates: "Firewood near [Street A] and [Street B]"
+Use Mapbox reverse geocoding for cross-street names
+Wood Quality (Optional):
+Radio buttons with simple descriptions
+Options: "Fresh Cut", "Semi-Seasoned", "Well-Seasoned", "Poor Quality"
+Replace current complex wood_types array selection
+Bundle Size (Optional):
+Radio buttons with visual icons
+Options: Small, Medium, Large
+Simple illustrations for each size
+Pricing (Optional):
+Keep existing checkbox structure
+Ranges: Under $5, $5-10, $10-15, $15+, Varies
+Multiple selections allowed
+Staffing Level (Optional):
+Radio buttons: “Self-Service”, "Mostly Self-Service", "Always Staffed", "Unknown"
+Default: "Self-Service"
+
+Step 4: Contact & Payment
+User Story
+As a stand lister, I want to provide the contact information and payment methods so buyers can reach the stand owner, with the option to indicate if this is my own stand.
+Acceptance Criteria
+All fields optional
+Ownership verification checkbox
+Multiple payment method selection
+Email/phone format validation when provided
+Additional details text area
+Field Specifications:
+Contact Information:
+"Owner's Name" (Optional) - Text input
+"Email" (Optional) - Email validation if provided
+"Phone" (Optional) - Phone format validation if provided
+"This Is My Stand" checkbox - Important for ownership verification
+Payment Methods (Optional):
+Checkboxes: Cash Box, Venmo, Zelle, PayPal, Register, Other
+Multiple selections allowed
+Store in existing payment_methods TEXT[] field
+Additional Details (Optional):
+Text area: "Hours, seasonal availability, special instructions, etc."
+500 character limit with counter
+Store in existing additional_details TEXT field
+Submit Button:
+Large, prominent "List a Stand" button
+Show loading state during submission
+Success redirect to stand page
+
+Database Schema Updates
+Existing listings keep current wood_types data
+New listings use simplified wood_quality field
+Both fields coexist for transition period
+
+UI/UX Requirements
+Mobile-First Design
+Single column layout for all form elements
+Large touch targets (minimum 44px)
+Bottom-positioned navigation for thumb accessibility
+Minimal typing - prioritize selections over text input
+Progress & Navigation
+// ProgressIndicator component
+interface ProgressProps {
+  currentStep: number;
+  totalSteps: number;
+  stepTitles: string[];
+}
+
+// Navigation component
+interface StepNavigationProps {
+  canGoNext: boolean;
+  canSkip: boolean;
+  onNext: () => void;
+  onSkip: () => void;
+  onBack: () => void;
+}
+
+Progress Display:
+Step counter: "Step 2 of 4" prominently displayed
+Visual progress bar showing completion percentage
+Step titles for context
+Skip Button Logic:
+Step 1: Disabled with tooltip "Location is required"
+Steps 2-4: Always enabled
+Visual state: Grayed out when disabled
+Conversational Tone
+Headlines as questions: "Where's the stand located?"
+Encouraging copy: "Great! Now let's help people know what to expect..."
+Friendly errors: "Oops, we need a location to help people find this stand"
+Progress encouragement: "Almost done!" on final step
+
+
+Validation Rules
+
+Server-Side Validation
+Coordinate validation (must resolve to valid address)
+Email format validation (if provided)
+Phone format validation (if provided)
+Character limits for text fields
+Enum validation for select fields
+
+Error Handling
+
+Network & Upload Issues
+Connection failures: Local storage of form progress
+Upload failures: Retry mechanism with user feedback
+Validation errors: Inline, contextual error messages
+Server errors: Friendly error page with retry option
+
+Testing Requirements
+Mobile Testing Priority
+iOS Safari and Android Chrome (primary browsers)
+Multiple screen sizes: iPhone SE to iPad
+Touch interactions: All gestures work properly
+Camera access: Photo upload from camera and gallery
+Functional Testing
+Complete flow: All 4 steps with valid data
+Skip scenarios: Skip optional steps and submit
+Error handling: GPS denied, invalid data, network issues
+Data persistence: Form state maintained during navigation
+Auto-generated names: Cross-street name generation works
+Accessibility
+Screen reader: All form elements properly labeled
+Keyboard navigation: Full completion without touch
+Color contrast: WCAG compliant
+Focus indicators: Clear visual focus states
+
+Implementation Notes
+Existing Components to Leverage
+Leaflet map integration (already implemented)
+Supabase authentication (user_id handling)
+Form validation patterns (existing in codebase)
+Radix UI components (buttons, inputs, checkboxes)
+New Components Needed
+MultiStepForm container component
+ProgressIndicator component
+LocationPicker component (extends existing map)
+PhotoUpload component with mobile optimization
+StepNavigation component
+Route Structure
+/list-stand (new multi-step form)
+├── /location (step 1)
+├── /photo (step 2)  
+├── /details (step 3)
+└── /contact (step 4)
+
+Or single route with state management (recommended for better UX).
+
+Success Criteria
+Technical
+[ ] Form submission creates valid database record
+[ ] Mobile photo upload works on iOS and Android
+[ ] GPS location detection works with fallback
+[ ] Cross-street name generation is accurate
+[ ] Form state persists during navigation
+User Experience
+[ ] Complete flow takes under 3 minutes
+[ ] Users can successfully skip optional fields
+[ ] Error messages are clear and actionable
+[ ] Progress indication reduces abandonment
+[ ] Mobile experience feels native
+This implementation-focused PRD provides the technical context and user stories needed for development while incorporating your existing tech stack and project structure.
