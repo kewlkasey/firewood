@@ -30,8 +30,8 @@ export default function RegistrationTester() {
   }
 
   const generateTestEmail = () => {
-    const timestamp = Date.now()
-    return `test-${timestamp}@findlocalfirewood.com`
+    const randomInt = Math.floor(Math.random() * 1000000) + 1
+    return `wright.casey+flf${randomInt}@gmail.com`
   }
 
   const runRegistrationTests = async () => {
@@ -305,30 +305,63 @@ export default function RegistrationTester() {
             )}
 
             {results.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-[#5e4b3a]">Test Results</h3>
-                {results.map((result, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(result.status)}
-                        <span className="font-medium">{result.test}</span>
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-[#5e4b3a]">Test Results</h3>
+                  {results.map((result, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(result.status)}
+                          <span className="font-medium">{result.test}</span>
+                        </div>
+                        <Badge className={getStatusColor(result.status)}>
+                          {result.status}
+                        </Badge>
                       </div>
-                      <Badge className={getStatusColor(result.status)}>
-                        {result.status}
-                      </Badge>
+                      <p className="text-sm text-gray-600 mb-2">{result.message}</p>
+                      {result.details && (
+                        <details className="text-xs bg-gray-50 p-2 rounded">
+                          <summary className="cursor-pointer font-medium">Details</summary>
+                          <pre className="mt-2 whitespace-pre-wrap">
+                            {JSON.stringify(result.details, null, 2)}
+                          </pre>
+                        </details>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{result.message}</p>
-                    {result.details && (
-                      <details className="text-xs bg-gray-50 p-2 rounded">
-                        <summary className="cursor-pointer font-medium">Details</summary>
-                        <pre className="mt-2 whitespace-pre-wrap">
-                          {JSON.stringify(result.details, null, 2)}
-                        </pre>
-                      </details>
-                    )}
+                  ))}
+                </div>
+
+                {/* Copy-Paste Summary */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-[#5e4b3a] mb-3">Copy-Paste Summary for AI</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-2">Click to select all text below:</p>
+                    <textarea
+                      readOnly
+                      className="w-full h-40 text-xs font-mono bg-white border rounded p-2 resize-none"
+                      value={`REGISTRATION TEST RESULTS - ${new Date().toLocaleString()}
+Test Email: ${testEmail}
+===========================================
+
+${results.map(result => {
+  const statusEmoji = result.status === 'success' ? '✅' : result.status === 'error' ? '❌' : result.status === 'warning' ? '⚠️' : '⏳';
+  return `${statusEmoji} ${result.test}: ${result.status.toUpperCase()}
+   Message: ${result.message}${result.details ? `
+   Details: ${JSON.stringify(result.details, null, 2)}` : ''}`;
+}).join('\n\n')}
+
+===========================================
+SUMMARY:
+- Total Tests: ${results.length}
+- Successful: ${results.filter(r => r.status === 'success').length}
+- Failed: ${results.filter(r => r.status === 'error').length}
+- Warnings: ${results.filter(r => r.status === 'warning').length}
+- Overall Status: ${results.every(r => r.status === 'success') ? 'ALL PASSED' : results.some(r => r.status === 'error') ? 'FAILURES DETECTED' : 'COMPLETED WITH WARNINGS'}`}
+                      onClick={(e) => e.currentTarget.select()}
+                    />
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </CardContent>
