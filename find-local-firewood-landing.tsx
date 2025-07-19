@@ -208,7 +208,7 @@ export default function FindLocalFirewoodLanding() {
                   </li>
                 </ul>
                 <Link href="/list-your-stand?owner=true">
-                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List Your Stand</Button>
+                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List A Stand</Button>
                 </Link>
               </div>
             </div>

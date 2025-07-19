@@ -512,8 +512,8 @@ export default function DirectoryPage() {
             <Link href="/directory" className="text-[#2d5d2a] font-medium">
               Directory
             </Link>
-            <Link href="/list-your-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
-              List Your Stand
+            <Link href="/list-a-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
+              List A Stand
             </Link>
             <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
               About
@@ -665,8 +665,8 @@ export default function DirectoryPage() {
                     Clear Filter
                   </Button>
                 ) : null}
-                <Link href="/list-your-stand">
-                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List Your Stand</Button>
+                <Link href="/list-a-stand">
+                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List A Stand</Button>
                 </Link>
               </div>
             </div>
