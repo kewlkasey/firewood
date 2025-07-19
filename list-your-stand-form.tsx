@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { TreesIcon as Tree, Upload, CheckCircle } from "lucide-react"
 import AddressInput from "./components/address-input"
@@ -41,6 +39,13 @@ interface FormErrors {
 }
 
 export default function ListYourStandForm() {
+  // Check URL parameters on mount
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('owner') === 'true') {
+      setIsOwnerStand(true)
+    }
+  }, [])
   const [formData, setFormData] = useState<FormData>({
     standName: "",
     yourName: "",
@@ -61,6 +66,7 @@ export default function ListYourStandForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [showMoreWoodTypes, setShowMoreWoodTypes] = useState(false)
+  const [isOwnerStand, setIsOwnerStand] = useState<boolean | null>(null)
 
   const initialWoodTypes = [
     "Ash",
@@ -233,6 +239,36 @@ export default function ListYourStandForm() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-6 md:p-8 space-y-8">
+          {/* Stand Ownership Question */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-[#5e4b3a] border-b border-[#f5f1e8] pb-2">Stand Ownership</h2>
+            <p className="text-sm text-[#5e4b3a]/70">
+              Are you listing your own stand or helping list someone else's stand? <span className="text-red-500">*</span>
+            </p>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="standOwnership"
+                  checked={isOwnerStand === true}
+                  onChange={() => setIsOwnerStand(true)}
+                  className="w-4 h-4 text-[#2d5d2a] border-gray-300 focus:ring-[#2d5d2a]"
+                />
+                <span className="text-sm text-[#5e4b3a]">This is my stand (I own/operate this firewood stand)</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="standOwnership"
+                  checked={isOwnerStand === false}
+                  onChange={() => setIsOwnerStand(false)}
+                  className="w-4 h-4 text-[#2d5d2a] border-gray-300 focus:ring-[#2d5d2a]"
+                />
+                <span className="text-sm text-[#5e4b3a]">I'm helping list someone else's stand</span>
+              </label>
+            </div>
+          </div>
+
           {/* Basic Information */}
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-[#5e4b3a] border-b border-[#f5f1e8] pb-2">Basic Information</h2>

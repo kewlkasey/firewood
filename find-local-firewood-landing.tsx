@@ -18,7 +18,7 @@ export default function FindLocalFirewoodLanding() {
               Find Stands
             </Link>
             <Link href="/list-your-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
-              List Your Stand
+              List A Stand
             </Link>
             <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
               About
@@ -81,7 +81,7 @@ export default function FindLocalFirewoodLanding() {
                     variant="outline"
                     className="border-[#5e4b3a] text-[#5e4b3a] hover:bg-[#5e4b3a]/10 h-12 px-6 rounded-md bg-transparent"
                   >
-                    List Your Stand
+                    List A Stand
                     <ChevronRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
@@ -213,7 +213,7 @@ export default function FindLocalFirewoodLanding() {
                     <span className="text-[#5e4b3a]">Simple listing process with photos and details</span>
                   </li>
                 </ul>
-                <Link href="/list-your-stand">
+                <Link href="/list-your-stand?owner=true">
                   <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List Your Stand</Button>
                 </Link>
               </div>
@@ -277,7 +277,7 @@ export default function FindLocalFirewoodLanding() {
                   variant="outline"
                   className="border-white text-white hover:bg-white/10 h-12 px-6 rounded-md bg-transparent"
                 >
-                  List Your Stand
+                  List A Stand
                 </Button>
               </Link>
             </div>
@@ -308,7 +308,7 @@ export default function FindLocalFirewoodLanding() {
                 </li>
                 <li>
                   <Link href="/list-your-stand" className="hover:text-white transition-colors">
-                    List Your Stand
+                    List A Stand
                   </Link>
                 </li>
                 <li>
