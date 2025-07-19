@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { VersionFooter } from '@/components/version-footer'
 
 export const metadata: Metadata = {
   title: 'Local Firewood',
@@ -36,7 +37,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="min-h-screen flex flex-col">
+          <main className="flex-1">
+            {children}
+          </main>
+          <VersionFooter />
+        </div>
+      </body>
     </html>
   )
 }
