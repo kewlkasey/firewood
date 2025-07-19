@@ -37,25 +37,19 @@ export default function FindLocalFirewoodLanding() {
               <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">Sign Up</Button>
             </Link>
           </div>
-          <Button variant="outline" size="icon" className="md:hidden bg-transparent">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <line x1="4" x2="20" y1="12" y2="12" />
-              <line x1="4" x2="20" y1="6" y2="6" />
-              <line x1="4" x2="20" y1="18" y2="18" />
-            </svg>
-            <span className="sr-only">Toggle menu</span>
-          </Button>
+          <div className="md:hidden">
+            <nav className="flex gap-4">
+              <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors text-sm">
+                Find Stands
+              </Link>
+              <Link href="/list-your-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors text-sm">
+                List A Stand
+              </Link>
+              <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors text-sm">
+                About
+              </Link>
+            </nav>
+          </div>
         </div>
       </header>
 
