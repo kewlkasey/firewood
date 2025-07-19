@@ -214,7 +214,7 @@ export default function Page() {
                   </li>
                 </ul>
                 <Link href="/list-your-stand">
-                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List A Stand</Button>
+                  <Button className="bg-[#2d5d2a] hover:bg-[#1e3d1c] text-white">List Your Stand</Button>
                 </Link>
               </div>
             </div>

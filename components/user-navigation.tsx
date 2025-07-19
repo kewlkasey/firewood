@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getCurrentUser, logoutUser, getUserProfile } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface UserProfile {
   id: string
@@ -115,6 +116,9 @@ export function UserNavigation() {
             <UserCircle className="w-4 h-4" />
             My Account
           </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+              <Link href="/list-your-stand">List Your Stand</Link>
+            </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={handleLogout}
             className="flex items-center gap-2 text-red-600 hover:text-red-700"

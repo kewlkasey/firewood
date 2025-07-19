@@ -923,7 +923,7 @@ export default function StandPage() {
               onClick={() => router.push("/list-your-stand")}
               className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors"
             >
-              List A Stand
+              List Your Stand
             </button>
             <button
               onClick={() => router.push("#")}
