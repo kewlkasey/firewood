@@ -457,7 +457,7 @@ export default function ListStandPage() {
       case 2:
         return true // Photos are optional
       case 3:
-        return formData.paymentMethods.length > 0 || formData.otherPaymentMethod.trim()
+        return true // All fields are optional
       case 4:
         return true // All fields are optional
       default:
