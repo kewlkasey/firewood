@@ -32,6 +32,9 @@ interface FormData {
   otherPaymentMethod: string
   additionalDetails: string
   onsitePerson: boolean
+  selfService: boolean
+  locationType: string
+  inventoryLevel: string
   
   // Step 4: Contact
   yourName: string
@@ -50,6 +53,9 @@ const INITIAL_FORM_DATA: FormData = {
   otherPaymentMethod: "",
   additionalDetails: "",
   onsitePerson: false,
+  selfService: false,
+  locationType: "",
+  inventoryLevel: "",
   yourName: "",
   email: "",
   phone: "",
@@ -125,21 +131,25 @@ export default function ListStandPage() {
         attribution: '© OpenStreetMap contributors'
       }).addTo(newMap)
 
-      // Add click handler immediately - this should work
-      newMap.on('click', (e: any) => {
-        console.log('Map clicked at:', e.latlng.lat, e.latlng.lng)
+      // Add double-click handler for pin placement
+      newMap.on('dblclick', (e: any) => {
+        console.log('Map double-clicked at:', e.latlng.lat, e.latlng.lng)
         placeMarker(e.latlng.lat, e.latlng.lng, false)
       })
+
+      // Disable default double-click zoom
+      newMap.doubleClickZoom.disable()
 
       // Wait for tiles to load and then ensure click handler is working
       tileLayer.on('load', () => {
         console.log('Tiles loaded, map ready for interaction')
         // Re-enable interactions to make sure they work
-        newMap.off('click')
-        newMap.on('click', (e: any) => {
-          console.log('Map clicked at:', e.latlng.lat, e.latlng.lng)
+        newMap.off('dblclick')
+        newMap.on('dblclick', (e: any) => {
+          console.log('Map double-clicked at:', e.latlng.lat, e.latlng.lng)
           placeMarker(e.latlng.lat, e.latlng.lng, false)
         })
+        newMap.doubleClickZoom.disable()
       })
 
       setMap(newMap)
@@ -407,14 +417,17 @@ export default function ListStandPage() {
         latitude: formData.location?.latitude || null,
         longitude: formData.location?.longitude || null,
         wood_types: [], // Empty for new flow, using wood_quality instead
-        wood_quality: formData.woodQuality,
-        price_range: formData.priceRange,
+        wood_quality: formData.woodQuality || null,
+        price_range: formData.priceRange || null,
         payment_methods: paymentMethods,
         additional_details: formData.additionalDetails || null,
         photo_urls: photoUrls,
         onsite_person: formData.onsitePerson,
-        owner_name: formData.yourName,
-        owner_email: formData.email,
+        self_serve: formData.selfService,
+        location_type: formData.locationType || null,
+        // Note: inventory_level would need to be added to database schema if it doesn't exist
+        owner_name: formData.yourName || null,
+        owner_email: formData.email || null,
         contact_phone: formData.phone || null,
         is_approved: false
       }
@@ -444,9 +457,9 @@ export default function ListStandPage() {
       case 2:
         return true // Photos are optional
       case 3:
-        return !!(formData.woodQuality && formData.priceRange && formData.paymentMethods.length > 0)
+        return formData.paymentMethods.length > 0 || formData.otherPaymentMethod.trim()
       case 4:
-        return !!(formData.yourName && formData.email)
+        return true // All fields are optional
       default:
         return false
     }
@@ -547,7 +560,7 @@ export default function ListStandPage() {
                     How to set your location:
                   </h3>
                   <div className="space-y-1 text-sm text-[#5e4b3a]">
-                    <p className="font-medium">1. 📍 Click anywhere on the map to drop a pin</p>
+                    <p className="font-medium">1. 📍 Double-click anywhere on the map to drop a pin</p>
                     <p className="font-medium">2. 🔄 Drag the pin to adjust the exact location</p>
                     <p className="text-[#5e4b3a]/70">or use the address search below if you prefer</p>
                   </div>
@@ -560,7 +573,7 @@ export default function ListStandPage() {
                     <p className="text-sm text-[#2d5d2a] font-medium text-center">
                       {formData.location?.isGPSLocation ? '📍 Using your GPS location' : 
                        formData.location ? '📌 Pin placed manually' : 
-                       '👆 Click anywhere on the map above to place your pin'}
+                       '👆 Double-click anywhere on the map above to place your pin'}
                     </p>
                   </div>
                 </div>
@@ -649,7 +662,7 @@ export default function ListStandPage() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Tell us about your firewood</h2>
-                  <p className="text-[#5e4b3a]/70">Help customers know what to expect</p>
+                  <p className="text-[#5e4b3a]/70">Help customers know what to expect (all fields optional)</p>
                 </div>
 
                 {/* Stand Name */}
@@ -667,10 +680,30 @@ export default function ListStandPage() {
                   <p className="text-xs text-[#5e4b3a]/60 mt-1">Leave blank to auto-generate based on location</p>
                 </div>
 
+                {/* Location Type */}
+                <div>
+                  <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                    Location Type (optional)
+                  </label>
+                  <select
+                    value={formData.locationType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, locationType: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
+                  >
+                    <option value="">Select location type...</option>
+                    <option value="Roadside">Roadside</option>
+                    <option value="Driveway">Driveway</option>
+                    <option value="Farm">Farm</option>
+                    <option value="Business">Business</option>
+                    <option value="Residence">Residence</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
                 {/* Wood Quality */}
                 <div>
                   <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                    Wood Quality <span className="text-red-500">*</span>
+                    Wood Quality (optional)
                   </label>
                   <select
                     value={formData.woodQuality}
@@ -685,10 +718,41 @@ export default function ListStandPage() {
                   </select>
                 </div>
 
+                {/* Inventory Level */}
+                <div>
+                  <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                    Current Inventory Level (optional)
+                  </label>
+                  <div className="space-y-2">
+                    {['Fully Stocked', 'Well Stocked', 'Some Available', 'Low Stock', 'Out of Stock'].map(level => (
+                      <label key={level} className="flex items-center">
+                        <input
+                          type="radio"
+                          name="inventoryLevel"
+                          value={level}
+                          checked={formData.inventoryLevel === level}
+                          onChange={(e) => setFormData(prev => ({ ...prev, inventoryLevel: e.target.value }))}
+                          className="mr-2"
+                        />
+                        <span className="text-[#5e4b3a]">{level}</span>
+                      </label>
+                    ))}
+                    {formData.inventoryLevel && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, inventoryLevel: '' }))}
+                        className="text-sm text-[#2d5d2a] hover:underline"
+                      >
+                        Clear selection
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Price Range */}
                 <div>
                   <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                    Price Range <span className="text-red-500">*</span>
+                    Price Range (optional)
                   </label>
                   <select
                     value={formData.priceRange}
@@ -708,9 +772,9 @@ export default function ListStandPage() {
                 {/* Payment Methods */}
                 <div>
                   <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                    Payment Methods <span className="text-red-500">*</span>
+                    Payment Methods (select at least one if adding payment info)
                   </label>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {['Cash Box', 'Venmo', 'PayPal', 'Zelle', 'Cash App'].map(method => (
                       <label key={method} className="flex items-center">
                         <input
@@ -731,7 +795,7 @@ export default function ListStandPage() {
                           }}
                           className="mr-2"
                         />
-                        <span className="text-[#5e4b3a]">{method}</span>
+                        <span className="text-[#5e4b3a] text-sm">{method}</span>
                       </label>
                     ))}
                   </div>
@@ -740,9 +804,38 @@ export default function ListStandPage() {
                     type="text"
                     value={formData.otherPaymentMethod}
                     onChange={(e) => setFormData(prev => ({ ...prev, otherPaymentMethod: e.target.value }))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a] mt-2"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a] mt-3"
                     placeholder="Other payment method..."
                   />
+                </div>
+
+                {/* Service Type Options */}
+                <div className="space-y-3 bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="onsitePerson"
+                      checked={formData.onsitePerson}
+                      onChange={(e) => setFormData(prev => ({ ...prev, onsitePerson: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <label htmlFor="onsitePerson" className="text-[#5e4b3a] cursor-pointer">
+                      Someone is usually available at this location
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="selfService"
+                      checked={formData.selfService}
+                      onChange={(e) => setFormData(prev => ({ ...prev, selfService: e.target.checked }))}
+                      className="mr-2"
+                    />
+                    <label htmlFor="selfService" className="text-[#5e4b3a] cursor-pointer">
+                      This is mostly/always a self-service location
+                    </label>
+                  </div>
                 </div>
 
                 {/* Additional Details */}
@@ -758,20 +851,6 @@ export default function ListStandPage() {
                     placeholder="Any special instructions, operating hours, wood types, etc."
                   />
                 </div>
-
-                {/* Onsite Person */}
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="onsitePerson"
-                    checked={formData.onsitePerson}
-                    onChange={(e) => setFormData(prev => ({ ...prev, onsitePerson: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  <label htmlFor="onsitePerson" className="text-[#5e4b3a] cursor-pointer">
-                    Someone is usually available at this location
-                  </label>
-                </div>
               </div>
             )}
 
@@ -779,41 +858,41 @@ export default function ListStandPage() {
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Contact Information</h2>
-                  <p className="text-[#5e4b3a]/70">How should customers reach you if needed?</p>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Owner Contact Information</h2>
+                  <p className="text-[#5e4b3a]/70">All fields are optional - add contact info if you'd like customers to reach you</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                      Your Name <span className="text-red-500">*</span>
+                      Owner's Name (optional)
                     </label>
                     <input
                       type="text"
                       value={formData.yourName}
                       onChange={(e) => setFormData(prev => ({ ...prev, yourName: e.target.value }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
-                      placeholder="Your full name"
+                      placeholder="Owner's full name"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                      Email <span className="text-red-500">*</span>
+                      Owner's Email (optional)
                     </label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
-                      placeholder="your@email.com"
+                      placeholder="owner@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                    Phone (optional)
+                    Owner's Phone Number (optional)
                   </label>
                   <input
                     type="tel"
@@ -826,18 +905,38 @@ export default function ListStandPage() {
 
                 {/* Stand Ownership */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="isOwner"
-                      checked={formData.isOwner}
-                      onChange={(e) => setFormData(prev => ({ ...prev, isOwner: e.target.checked }))}
-                      className="mr-2"
-                    />
-                    <label htmlFor="isOwner" className="text-[#5e4b3a] cursor-pointer font-medium">
-                      This is my stand (I own/operate this firewood stand)
-                    </label>
-                  </div>
+                  {user ? (
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="isOwner"
+                        checked={formData.isOwner}
+                        onChange={(e) => setFormData(prev => ({ ...prev, isOwner: e.target.checked }))}
+                        className="mr-2"
+                      />
+                      <label htmlFor="isOwner" className="text-[#5e4b3a] cursor-pointer font-medium">
+                        This is my stand (I own/operate this firewood stand)
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          id="isOwner"
+                          checked={false}
+                          disabled={true}
+                          className="mr-2 opacity-50"
+                        />
+                        <label className="text-[#5e4b3a]/60 font-medium">
+                          This is my stand (I own/operate this firewood stand)
+                        </label>
+                      </div>
+                      <p className="text-sm text-[#5e4b3a]/70">
+                        You must be logged in to claim ownership of a stand. You can claim this stand after submission by logging in and visiting the stand page.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
