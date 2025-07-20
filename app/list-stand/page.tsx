@@ -69,6 +69,8 @@ export default function ListStandPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [photoUploadErrors, setPhotoUploadErrors] = useState<string[]>([])
   
   // Step 1 - Location states
   const [locationStatus, setLocationStatus] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle')
@@ -80,8 +82,15 @@ export default function ListStandPage() {
   useEffect(() => {
     // Check authentication
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) {
+          console.warn("Error getting user:", error.message)
+        }
+        setUser(user)
+      } catch (error) {
+        console.error("Unexpected error checking authentication:", error)
+      }
     }
     checkUser()
   }, [])
@@ -335,14 +344,35 @@ export default function ListStandPage() {
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
-    const validFiles = files.filter(file => 
-      file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024 // 10MB limit
-    )
+    const errors: string[] = []
+    const validFiles: File[] = []
+
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        errors.push(`${file.name} is not a valid image file`)
+      } else if (file.size > 10 * 1024 * 1024) {
+        errors.push(`${file.name} is too large (max 10MB)`)
+      } else {
+        validFiles.push(file)
+      }
+    })
+
+    if (formData.photos.length + validFiles.length > 5) {
+      errors.push(`Too many photos selected. Maximum 5 photos allowed.`)
+      validFiles.splice(5 - formData.photos.length)
+    }
+
+    setPhotoUploadErrors(errors)
     
-    setFormData(prev => ({
-      ...prev,
-      photos: [...prev.photos, ...validFiles].slice(0, 5) // Max 5 photos
-    }))
+    if (validFiles.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        photos: [...prev.photos, ...validFiles].slice(0, 5) // Max 5 photos
+      }))
+    }
+
+    // Clear the input so same file can be selected again if needed
+    event.target.value = ''
   }
 
   const removePhoto = (index: number) => {
@@ -383,24 +413,49 @@ export default function ListStandPage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
+    setError(null)
 
     try {
+      // Validate location is set
+      if (!formData.location) {
+        throw new Error("Please set a location for your stand before submitting.")
+      }
+
       // Generate stand name if empty
-      const finalStandName = formData.standName.trim() || await generateStandName()
+      let finalStandName: string
+      try {
+        finalStandName = formData.standName.trim() || await generateStandName()
+      } catch (nameError) {
+        console.warn("Error generating stand name, using fallback:", nameError)
+        finalStandName = "Local Firewood Stand"
+      }
 
       // Upload photos to Supabase Storage
       const photoUrls: string[] = []
+      const photoUploadErrors: string[] = []
+      
       for (const photo of formData.photos) {
-        const fileName = `${Date.now()}-${photo.name}`
-        const { data, error } = await supabase.storage
-          .from('stand_photos')
-          .upload(fileName, photo)
-        
-        if (error) {
-          console.error("Error uploading photo:", error)
-        } else {
-          photoUrls.push(data.path)
+        try {
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${photo.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+          const { data, error } = await supabase.storage
+            .from('stand_photos')
+            .upload(fileName, photo)
+          
+          if (error) {
+            console.error("Error uploading photo:", error)
+            photoUploadErrors.push(`Failed to upload ${photo.name}: ${error.message}`)
+          } else if (data?.path) {
+            photoUrls.push(data.path)
+          }
+        } catch (photoError) {
+          console.error("Unexpected error uploading photo:", photoError)
+          photoUploadErrors.push(`Failed to upload ${photo.name}: Unexpected error`)
         }
+      }
+
+      // If some photos failed but at least one succeeded, continue with submission
+      if (photoUploadErrors.length > 0 && photoUrls.length === 0 && formData.photos.length > 0) {
+        throw new Error("Failed to upload any photos. Please check your internet connection and try again.")
       }
 
       // Prepare payment methods
@@ -409,13 +464,18 @@ export default function ListStandPage() {
         paymentMethods.push(formData.otherPaymentMethod.trim())
       }
 
+      // Validate email format if provided
+      if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        throw new Error("Please enter a valid email address.")
+      }
+
       // Prepare submission data
       const submissionData = {
         user_id: user?.id || '00000000-0000-0000-0000-000000000000', // Anonymous fallback
         stand_name: finalStandName,
-        address: formData.location?.formattedAddress || '',
-        latitude: formData.location?.latitude || null,
-        longitude: formData.location?.longitude || null,
+        address: formData.location.formattedAddress || '',
+        latitude: formData.location.latitude,
+        longitude: formData.location.longitude,
         wood_types: [], // Empty for new flow, using wood_quality instead
         wood_quality: formData.woodQuality || null,
         price_range: formData.priceRange || null,
@@ -425,7 +485,6 @@ export default function ListStandPage() {
         onsite_person: formData.onsitePerson,
         self_serve: formData.selfService,
         location_type: formData.locationType || null,
-        // Note: inventory_level would need to be added to database schema if it doesn't exist
         owner_name: formData.yourName || null,
         owner_email: formData.email || null,
         contact_phone: formData.phone || null,
@@ -438,13 +497,28 @@ export default function ListStandPage() {
         .select()
 
       if (error) {
-        throw error
+        // Handle specific database errors
+        if (error.code === '23505') {
+          throw new Error("A stand at this exact location already exists. Please adjust the location slightly.")
+        } else if (error.code === '23514') {
+          throw new Error("Some of the provided data is invalid. Please check all fields and try again.")
+        } else if (error.message.includes('permission')) {
+          throw new Error("You don't have permission to create stands. Please try logging in or contact support.")
+        } else {
+          throw new Error(`Database error: ${error.message}`)
+        }
       }
 
       setSubmitSuccess(true)
-    } catch (error) {
+      
+      // Show photo upload warnings if any
+      if (photoUploadErrors.length > 0) {
+        console.warn("Some photos failed to upload:", photoUploadErrors)
+      }
+
+    } catch (error: any) {
       console.error("Error submitting stand:", error)
-      alert("There was an error submitting your stand. Please try again.")
+      setError(error.message || "An unexpected error occurred. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -467,11 +541,15 @@ export default function ListStandPage() {
 
   const nextStep = () => {
     if (canProceedFromStep(currentStep)) {
+      setError(null) // Clear errors when moving forward
+      setPhotoUploadErrors([]) // Clear photo errors
       setCurrentStep(prev => Math.min(prev + 1, 4))
     }
   }
 
   const prevStep = () => {
+    setError(null) // Clear errors when moving back
+    setPhotoUploadErrors([]) // Clear photo errors
     setCurrentStep(prev => Math.max(prev - 1, 1))
   }
 
@@ -551,6 +629,41 @@ export default function ListStandPage() {
       <div className="max-w-2xl mx-auto p-4 py-8">
         <Card>
           <CardContent className="p-6">
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Error
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      {error}
+                    </div>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <div className="-mx-1.5 -my-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setError(null)}
+                        className="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100"
+                      >
+                        <span className="sr-only">Dismiss</span>
+                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Location */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -644,6 +757,25 @@ export default function ListStandPage() {
                       <p className="text-[#5e4b3a]/60 text-sm">Up to 5 photos, max 10MB each</p>
                     </label>
                   </div>
+
+                  {/* Photo Upload Errors */}
+                  {photoUploadErrors.length > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-yellow-800 mb-2">Photo Upload Issues:</h4>
+                      <ul className="text-sm text-yellow-700 space-y-1">
+                        {photoUploadErrors.map((error, index) => (
+                          <li key={index}>• {error}</li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoUploadErrors([])}
+                        className="mt-2 text-xs text-yellow-600 hover:text-yellow-800 underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
 
                   {/* Photo Preview */}
                   {formData.photos.length > 0 && (
