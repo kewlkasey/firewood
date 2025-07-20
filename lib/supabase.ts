@@ -52,10 +52,12 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           wood_types: string[]
+          wood_quality: string | null
           price_range: string
           payment_methods: string[]
           additional_details: string | null
           photo_url: string | null
+          photo_urls: string[] | null
           onsite_person: boolean
           is_approved: boolean
           created_at: string
@@ -68,11 +70,13 @@ export type Database = {
           address: string
           latitude?: number | null
           longitude?: number | null
-          wood_types: string[]
+          wood_types?: string[]
+          wood_quality?: string | null
           price_range: string
           payment_methods: string[]
           additional_details?: string | null
           photo_url?: string | null
+          photo_urls?: string[] | null
           onsite_person?: boolean
           is_approved?: boolean
           created_at?: string
@@ -86,10 +90,12 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           wood_types?: string[]
+          wood_quality?: string | null
           price_range?: string
           payment_methods?: string[]
           additional_details?: string | null
           photo_url?: string | null
+          photo_urls?: string[] | null
           onsite_person?: boolean
           is_approved?: boolean
           created_at?: string
