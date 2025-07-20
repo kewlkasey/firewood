@@ -515,21 +515,35 @@ export default function ListStandPage() {
           <p className="text-white/90">Help your community find affordable firewood</p>
           
           {/* Progress bar */}
-          <div className="flex items-center mt-6 space-x-4">
-            {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step <= currentStep ? 'bg-white text-[#2d5d2a]' : 'bg-white/20 text-white/60'
-                }`}>
-                  {step}
+          <div className="mt-6">
+            <div className="flex items-center space-x-4">
+              {[
+                { num: 1, name: "Location" },
+                { num: 2, name: "Photo" },
+                { num: 3, name: "Stand Details" },
+                { num: 4, name: "Contact" }
+              ].map((step) => (
+                <div key={step.num} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      step.num <= currentStep ? 'bg-white text-[#2d5d2a]' : 'bg-white/20 text-white/60'
+                    }`}>
+                      {step.num}
+                    </div>
+                    <span className={`text-xs mt-1 ${
+                      step.num <= currentStep ? 'text-white' : 'text-white/60'
+                    }`}>
+                      {step.name}
+                    </span>
+                  </div>
+                  {step.num < 4 && (
+                    <div className={`w-12 h-0.5 mb-4 ${
+                      step.num < currentStep ? 'bg-white' : 'bg-white/20'
+                    }`} />
+                  )}
                 </div>
-                {step < 4 && (
-                  <div className={`w-12 h-0.5 ${
-                    step < currentStep ? 'bg-white' : 'bg-white/20'
-                  }`} />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -542,7 +556,7 @@ export default function ListStandPage() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Where is the stand located?</h2>
-                  <p className="text-[#5e4b3a]/70">Pin the exact location on the map or search for an address</p>
+                  <p className="text-[#5e4b3a]/70">We'll help people in the community find it! Just drop a pin on the map or let us use your current location.</p>
                 </div>
 
                 {/* GPS Status */}
@@ -609,8 +623,8 @@ export default function ListStandPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Add photos of the stand</h2>
-                  <p className="text-[#5e4b3a]/70">Photos help customers find the stand (optional but recommended)</p>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Show people what to expect!</h2>
+                  <p className="text-[#5e4b3a]/70">A quick photo helps folks spot the stand when they arrive. You can always add more later.</p>
                 </div>
 
                 {/* Photo Upload */}
@@ -661,8 +675,8 @@ export default function ListStandPage() {
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Tell us about the firewood</h2>
-                  <p className="text-[#5e4b3a]/70">Help customers know what to expect (all fields optional)</p>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Tell us about the stand</h2>
+                  <p className="text-[#5e4b3a]/70">The more details you share, the easier it is for customers to know what the stand is offering. Don't worry - everything here is optional!</p>
                 </div>
 
                 {/* Stand Name */}
@@ -858,8 +872,8 @@ export default function ListStandPage() {
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Owner Contact Information</h2>
-                  <p className="text-[#5e4b3a]/70">All fields are optional - add contact info if you'd like customers to reach you</p>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">How can customers reach the owner?</h2>
+                  <p className="text-[#5e4b3a]/70">Share contact info so people can ask questions or let the owner know they're stopping by. All fields are optional.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
