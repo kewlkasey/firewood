@@ -483,7 +483,7 @@ export default function ListStandPage() {
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Stand Listed Successfully!</h2>
             <p className="text-[#5e4b3a]/80 mb-4">
-              Your firewood stand has been submitted and will be reviewed before appearing on the map.
+              The firewood stand has been submitted and will be reviewed before appearing on the map.
             </p>
             <Button
               onClick={() => router.push('/')}
@@ -541,7 +541,7 @@ export default function ListStandPage() {
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Where is your stand located?</h2>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Where is the stand located?</h2>
                   <p className="text-[#5e4b3a]/70">Pin the exact location on the map or search for an address</p>
                 </div>
 
@@ -571,9 +571,9 @@ export default function ListStandPage() {
                   <div id="location-map" className="w-full h-80 rounded-lg border-2 border-[#2d5d2a]/20 hover:border-[#2d5d2a]/40 transition-colors cursor-crosshair"></div>
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <p className="text-sm text-[#2d5d2a] font-medium text-center">
-                      {formData.location?.isGPSLocation ? '📍 Using your GPS location' : 
+                      {formData.location?.isGPSLocation ? '📍 Using current GPS location' : 
                        formData.location ? '📌 Pin placed manually' : 
-                       '👆 Double-click anywhere on the map above to place your pin'}
+                       '👆 Double-click anywhere on the map above to place the pin'}
                     </p>
                   </div>
                 </div>
@@ -609,8 +609,8 @@ export default function ListStandPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Add photos of your stand</h2>
-                  <p className="text-[#5e4b3a]/70">Photos help customers find your stand (optional but recommended)</p>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Add photos of the stand</h2>
+                  <p className="text-[#5e4b3a]/70">Photos help customers find the stand (optional but recommended)</p>
                 </div>
 
                 {/* Photo Upload */}
@@ -661,7 +661,7 @@ export default function ListStandPage() {
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Tell us about your firewood</h2>
+                  <h2 className="text-2xl font-bold text-[#5e4b3a] mb-2">Tell us about the firewood</h2>
                   <p className="text-[#5e4b3a]/70">Help customers know what to expect (all fields optional)</p>
                 </div>
 
@@ -915,7 +915,7 @@ export default function ListStandPage() {
                         className="mr-2"
                       />
                       <label htmlFor="isOwner" className="text-[#5e4b3a] cursor-pointer font-medium">
-                        This is my stand (I own/operate this firewood stand)
+                        I own/operate this firewood stand
                       </label>
                     </div>
                   ) : (
@@ -929,7 +929,7 @@ export default function ListStandPage() {
                           className="mr-2 opacity-50"
                         />
                         <label className="text-[#5e4b3a]/60 font-medium">
-                          This is my stand (I own/operate this firewood stand)
+                          I own/operate this firewood stand
                         </label>
                       </div>
                       <p className="text-sm text-[#5e4b3a]/70">
