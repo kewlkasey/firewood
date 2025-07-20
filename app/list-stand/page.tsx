@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, ArrowRight, MapPin, Upload, CheckCircle, Loader2, Camera } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { useRouter } from "next/navigation"
+import AddressInput from "@/components/address-input"
 
 interface LocationData {
+  formattedAddress: string
   latitude: number
   longitude: number
-  address: string
-  isGPSLocation: boolean
+  isValidated: boolean
+  isGPSLocation?: boolean
 }
 
 interface FormData {
@@ -67,7 +69,7 @@ export default function ListStandPage() {
   const [mapReady, setMapReady] = useState(false)
   const [map, setMap] = useState<any>(null)
   const [marker, setMarker] = useState<any>(null)
-  const [addressInput, setAddressInput] = useState("")
+  const [addressData, setAddressData] = useState<{formattedAddress: string; latitude: number; longitude: number; isValidated: boolean} | null>(null)
 
   useEffect(() => {
     // Check authentication
@@ -123,17 +125,21 @@ export default function ListStandPage() {
         attribution: '© OpenStreetMap contributors'
       }).addTo(newMap)
 
-      // Wait for tiles to load before adding click handler
-      tileLayer.on('load', () => {
-        // Add click handler for placing pins
-        newMap.on('click', (e: any) => {
-          placeMarker(e.latlng.lat, e.latlng.lng, false)
-        })
+      // Add click handler immediately - this should work
+      newMap.on('click', (e: any) => {
+        console.log('Map clicked at:', e.latlng.lat, e.latlng.lng)
+        placeMarker(e.latlng.lat, e.latlng.lng, false)
       })
 
-      // Also add the click handler immediately as fallback
-      newMap.on('click', (e: any) => {
-        placeMarker(e.latlng.lat, e.latlng.lng, false)
+      // Wait for tiles to load and then ensure click handler is working
+      tileLayer.on('load', () => {
+        console.log('Tiles loaded, map ready for interaction')
+        // Re-enable interactions to make sure they work
+        newMap.off('click')
+        newMap.on('click', (e: any) => {
+          console.log('Map clicked at:', e.latlng.lat, e.latlng.lng)
+          placeMarker(e.latlng.lat, e.latlng.lng, false)
+        })
       })
 
       setMap(newMap)
@@ -262,48 +268,58 @@ export default function ListStandPage() {
         address = data.features[0].place_name
       }
 
+      const locationData = {
+        formattedAddress: address,
+        latitude: lat,
+        longitude: lng,
+        isValidated: data.features && data.features.length > 0,
+        isGPSLocation: isGPS
+      }
+
       setFormData(prev => ({
         ...prev,
-        location: {
-          latitude: lat,
-          longitude: lng,
-          address,
-          isGPSLocation: isGPS
-        }
+        location: locationData
       }))
+
+      // Also update addressData for the AddressInput component
+      setAddressData({
+        formattedAddress: address,
+        latitude: lat,
+        longitude: lng,
+        isValidated: data.features && data.features.length > 0
+      })
     } catch (error) {
       console.error("Error reverse geocoding:", error)
       // Fallback to coordinates
+      const fallbackData = {
+        formattedAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        latitude: lat,
+        longitude: lng,
+        isValidated: false,
+        isGPSLocation: isGPS
+      }
+
       setFormData(prev => ({
         ...prev,
-        location: {
-          latitude: lat,
-          longitude: lng,
-          address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
-          isGPSLocation: isGPS
-        }
+        location: fallbackData
       }))
+
+      setAddressData({
+        formattedAddress: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        latitude: lat,
+        longitude: lng,
+        isValidated: false
+      })
     }
   }
 
-  const handleAddressSearch = async () => {
-    if (!addressInput.trim() || !map) return
-
-    try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(addressInput)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=address,poi&limit=1`
-      )
-      const data = await response.json()
-      
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0]
-        const [lng, lat] = feature.center
-        
-        map.setView([lat, lng], 15)
-        placeMarker(lat, lng, false)
-      }
-    } catch (error) {
-      console.error("Error geocoding address:", error)
+  const handleAddressChange = (addressInput: {formattedAddress: string; latitude: number; longitude: number; isValidated: boolean} | null) => {
+    setAddressData(addressInput)
+    
+    if (addressInput && addressInput.latitude && addressInput.longitude && map) {
+      // Update map view and place marker
+      map.setView([addressInput.latitude, addressInput.longitude], 15)
+      placeMarker(addressInput.latitude, addressInput.longitude, false)
     }
   }
 
@@ -387,7 +403,7 @@ export default function ListStandPage() {
       const submissionData = {
         user_id: user?.id || '00000000-0000-0000-0000-000000000000', // Anonymous fallback
         stand_name: finalStandName,
-        address: formData.location?.address || '',
+        address: formData.location?.formattedAddress || '',
         latitude: formData.location?.latitude || null,
         longitude: formData.location?.longitude || null,
         wood_types: [], // Empty for new flow, using wood_quality instead
@@ -544,7 +560,7 @@ export default function ListStandPage() {
                     <p className="text-sm text-[#2d5d2a] font-medium text-center">
                       {formData.location?.isGPSLocation ? '📍 Using your GPS location' : 
                        formData.location ? '📌 Pin placed manually' : 
-                       '👆 Click on the map above to place your pin'}
+                       '👆 Click anywhere on the map above to place your pin'}
                     </p>
                   </div>
                 </div>
@@ -552,23 +568,10 @@ export default function ListStandPage() {
                 {/* Address Search (Secondary Option) */}
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-[#5e4b3a]">Alternative: Search by address</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter your address..."
-                      value={addressInput}
-                      onChange={(e) => setAddressInput(e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
-                    />
-                    <Button
-                      onClick={handleAddressSearch}
-                      variant="outline"
-                      className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
-                    >
-                      Search
-                    </Button>
-                  </div>
+                  <AddressInput 
+                    value={addressData}
+                    onChange={handleAddressChange}
+                  />
                 </div>
 
                 {/* Selected Location Display */}
@@ -578,7 +581,10 @@ export default function ListStandPage() {
                       <MapPin className="h-5 w-5 text-[#2d5d2a] flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="font-medium text-[#2d5d2a]">Selected Location</p>
-                        <p className="text-sm text-[#5e4b3a]">{formData.location.address}</p>
+                        <p className="text-sm text-[#5e4b3a]">{formData.location.formattedAddress}</p>
+                        {formData.location.isValidated && (
+                          <p className="text-xs text-green-600">✓ Address verified</p>
+                        )}
                       </div>
                     </div>
                   </div>
