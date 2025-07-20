@@ -119,11 +119,19 @@ export default function ListStandPage() {
         zoomControl: true
       })
 
-      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const tileLayer = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© OpenStreetMap contributors'
       }).addTo(newMap)
 
-      // Add click handler for placing pins
+      // Wait for tiles to load before adding click handler
+      tileLayer.on('load', () => {
+        // Add click handler for placing pins
+        newMap.on('click', (e: any) => {
+          placeMarker(e.latlng.lat, e.latlng.lng, false)
+        })
+      })
+
+      // Also add the click handler immediately as fallback
       newMap.on('click', (e: any) => {
         placeMarker(e.latlng.lat, e.latlng.lng, false)
       })
@@ -175,14 +183,63 @@ export default function ListStandPage() {
       map.removeLayer(marker)
     }
 
-    // Add new marker
+    // Create custom marker icon
+    const customIcon = window.L.divIcon({
+      html: `
+        <div style="
+          background-color: #2d5d2a;
+          width: 20px;
+          height: 20px;
+          border-radius: 50% 50% 50% 0;
+          border: 3px solid white;
+          transform: rotate(-45deg);
+          box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+          cursor: grab;
+        ">
+          <div style="
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+          "></div>
+        </div>
+      `,
+      className: "custom-marker-icon",
+      iconSize: [20, 20],
+      iconAnchor: [10, 20]
+    })
+
+    // Add new marker with custom icon
     const newMarker = window.L.marker([lat, lng], {
-      draggable: true
+      draggable: true,
+      icon: customIcon
     }).addTo(map)
 
+    // Handle marker drag start
+    newMarker.on('dragstart', (e: any) => {
+      const markerElement = e.target.getElement()
+      if (markerElement) {
+        markerElement.style.cursor = 'grabbing'
+      }
+    })
+
     // Handle marker drag
+    newMarker.on('drag', (e: any) => {
+      // Visual feedback during drag
+      const position = e.target.getLatLng()
+      // Could add live coordinate display here if needed
+    })
+
+    // Handle marker drag end
     newMarker.on('dragend', (e: any) => {
       const position = e.target.getLatLng()
+      const markerElement = e.target.getElement()
+      if (markerElement) {
+        markerElement.style.cursor = 'grab'
+      }
       updateLocationData(position.lat, position.lng, false)
     })
 
@@ -467,32 +524,51 @@ export default function ListStandPage() {
                   </div>
                 )}
 
-                {/* Address Search */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Search for an address..."
-                    value={addressInput}
-                    onChange={(e) => setAddressInput(e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
-                  />
-                  <Button
-                    onClick={handleAddressSearch}
-                    variant="outline"
-                    className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
-                  >
-                    Search
-                  </Button>
+                {/* Primary Instructions */}
+                <div className="bg-[#2d5d2a]/5 border border-[#2d5d2a]/20 rounded-lg p-4 mb-4">
+                  <h3 className="font-semibold text-[#2d5d2a] mb-2 flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    How to set your location:
+                  </h3>
+                  <div className="space-y-1 text-sm text-[#5e4b3a]">
+                    <p className="font-medium">1. 📍 Click anywhere on the map to drop a pin</p>
+                    <p className="font-medium">2. 🔄 Drag the pin to adjust the exact location</p>
+                    <p className="text-[#5e4b3a]/70">or use the address search below if you prefer</p>
+                  </div>
                 </div>
 
                 {/* Map */}
+                <div className="space-y-3">
+                  <div id="location-map" className="w-full h-80 rounded-lg border-2 border-[#2d5d2a]/20 hover:border-[#2d5d2a]/40 transition-colors cursor-crosshair"></div>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-[#2d5d2a] font-medium text-center">
+                      {formData.location?.isGPSLocation ? '📍 Using your GPS location' : 
+                       formData.location ? '📌 Pin placed manually' : 
+                       '👆 Click on the map above to place your pin'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Address Search (Secondary Option) */}
                 <div className="space-y-2">
-                  <div id="location-map" className="w-full h-80 rounded-lg border border-gray-200"></div>
-                  <p className="text-xs text-[#5e4b3a]/60">
-                    {formData.location?.isGPSLocation ? '📍 GPS location' : '📌 Manual pin'} • 
-                    Click anywhere on the map to place a pin • Drag the pin to adjust
-                  </p>
+                  <p className="text-sm font-medium text-[#5e4b3a]">Alternative: Search by address</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter your address..."
+                      value={addressInput}
+                      onChange={(e) => setAddressInput(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
+                    />
+                    <Button
+                      onClick={handleAddressSearch}
+                      variant="outline"
+                      className="border-[#2d5d2a] text-[#2d5d2a] hover:bg-[#2d5d2a]/10"
+                    >
+                      Search
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Selected Location Display */}
