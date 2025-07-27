@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, LogOut, UserCircle } from 'lucide-react'
+import { LogOut, UserCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getCurrentUser, logoutUser, getUserProfile } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
 
 interface UserProfile {
   id: string
@@ -22,7 +23,7 @@ interface UserProfile {
 }
 
 export function UserNavigation() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
