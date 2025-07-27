@@ -35,6 +35,7 @@ interface FormData {
   selfService: boolean
   locationType: string
   inventoryLevel: string
+  bundleSize: string
   
   // Step 4: Contact
   yourName: string
@@ -56,6 +57,7 @@ const INITIAL_FORM_DATA: FormData = {
   selfService: false,
   locationType: "",
   inventoryLevel: "",
+  bundleSize: "",
   yourName: "",
   email: "",
   phone: "",
@@ -485,10 +487,8 @@ export default function ListStandPage() {
         onsite_person: formData.onsitePerson,
         self_serve: formData.selfService,
         location_type: formData.locationType || null,
-        owner_name: formData.yourName || null,
-        owner_email: formData.email || null,
-        contact_phone: formData.phone || null,
-        is_approved: false
+        is_approved: false,
+        bundle_size: formData.bundleSize || null,
       }
 
       const { data, error } = await supabase
@@ -838,11 +838,12 @@ export default function ListStandPage() {
                   >
                     <option value="">Select location type...</option>
                     <option value="Roadside">Roadside</option>
-                    <option value="Driveway">Driveway</option>
-                    <option value="Farm">Farm</option>
-                    <option value="Business">Business</option>
-                    <option value="Residence">Residence</option>
-                    <option value="Other">Other</option>
+                    <option value="Campground">Campground</option>
+                    <option value="Convenience Store">Convenience Store</option>
+                    <option value="Grocery Store">Grocery Store</option>
+                    <option value="Nursery/Garden Center">Nursery/Garden Center</option>
+                    <option value="Farm Supply Store">Farm Supply Store</option>
+                    <option value="Big Retail">Big Retail</option>
                   </select>
                 </div>
 
@@ -857,20 +858,37 @@ export default function ListStandPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
                   >
                     <option value="">Select wood quality...</option>
-                    <option value="Seasoned">Seasoned (ready to burn)</option>
-                    <option value="Green">Green (needs drying time)</option>
-                    <option value="Mixed">Mixed (seasoned and green)</option>
-                    <option value="Unknown">Unknown/Unspecified</option>
+                    <option value="Fresh Cut">Fresh Cut</option>
+                    <option value="Semi-Seasoned">Semi-Seasoned</option>
+                    <option value="Well-Seasoned">Well-Seasoned</option>
+                    <option value="Poor Quality">Poor Quality</option>
+                  </select>
+                </div>
+
+                {/* Bundle Size */}
+                <div>
+                  <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
+                    Bundle Size (optional)
+                  </label>
+                  <select
+                    value={formData.bundleSize}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bundleSize: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#2d5d2a]"
+                  >
+                    <option value="">Select bundle size...</option>
+                    <option value="Small">Small</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Large">Large</option>
                   </select>
                 </div>
 
                 {/* Inventory Level */}
                 <div>
                   <label className="block text-sm font-medium text-[#5e4b3a] mb-2">
-                    Current Inventory Level (optional)
+                    Inventory Level (optional)
                   </label>
                   <div className="space-y-2">
-                    {['Fully Stocked', 'Well Stocked', 'Some Available', 'Low Stock', 'Out of Stock'].map(level => (
+                    {['High', 'Medium', 'Low', 'None'].map(level => (
                       <label key={level} className="flex items-center">
                         <input
                           type="radio"

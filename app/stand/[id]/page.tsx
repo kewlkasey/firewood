@@ -74,6 +74,8 @@ interface StandDetails {
   }>
   is_verified_by_community: boolean
   inventory_level: string | null
+  wood_quality: string | null
+  bundle_size: string | null
 }
 
 interface VerificationFormData {
@@ -1056,27 +1058,34 @@ export default function StandPage() {
                   </div>
                 </div>
 
-                {/* Wood Format & Service */}
+                {/* Wood Quality & Bundle Size */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Wood Format</h3>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Wood Quality</h3>
                     <div className="space-y-1">
-                      {stand.bundled_flag && <Badge variant="outline">📦 Bundled Wood</Badge>}
-                      {stand.loose_flag && <Badge variant="outline">🪵 Loose Wood</Badge>}
+                      {stand.wood_quality && <Badge variant="outline">{stand.wood_quality}</Badge>}
                     </div>
                   </div>
-
                   <div>
-                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Service Type</h3>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Bundle Size</h3>
                     <div className="space-y-1">
-                      {stand.self_serve && <Badge variant="outline">🛒 Self-Serve</Badge>}
-                      {stand.onsite_person && <Badge variant="outline">👤 Owner Available</Badge>}
-                      {stand.delivery_available && (
-                        <Badge variant="outline">
-                          <Truck className="h-3 w-3 mr-1" />
-                          Delivery Available
-                        </Badge>
-                      )}
+                      {stand.bundle_size && <Badge variant="outline">{stand.bundle_size}</Badge>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inventory Level & Location Type */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Inventory Level</h3>
+                    <div className="space-y-1">
+                      {stand.inventory_level && <Badge variant="outline">{stand.inventory_level}</Badge>}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[#5e4b3a] mb-2">Location Type</h3>
+                    <div className="space-y-1">
+                      {stand.location_type && <Badge variant="outline">{stand.location_type}</Badge>}
                     </div>
                   </div>
                 </div>
