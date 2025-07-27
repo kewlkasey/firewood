@@ -452,10 +452,10 @@ export default function TestStandPage() {
               Directory
             </button>
             <button
-              onClick={() => router.push("/list-your-stand")}
+              onClick={() => router.push("/list-a-stand")}
               className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors"
             >
-              List Your Stand
+              List A Stand
             </button>
             <button
               onClick={() => router.push("#")}

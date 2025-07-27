@@ -117,7 +117,7 @@ export function UserNavigation() {
             My Account
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-              <Link href="/list-your-stand">List Your Stand</Link>
+              <Link href="/list-a-stand">List A Stand</Link>
             </DropdownMenuItem>
           <DropdownMenuItem 
             onClick={handleLogout}

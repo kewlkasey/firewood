@@ -513,7 +513,7 @@ export default function DirectoryPage() {
               Directory
             </Link>
             <Link href="/list-your-stand" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
-              List Your Stand
+              List A Stand
             </Link>
             <Link href="#" className="text-[#5e4b3a] hover:text-[#2d5d2a] font-medium transition-colors">
               About
