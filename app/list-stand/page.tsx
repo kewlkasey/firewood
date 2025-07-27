@@ -473,7 +473,7 @@ export default function ListStandPage() {
 
       // Prepare submission data
       const submissionData = {
-        user_id: user?.id || '00000000-0000-0000-0000-000000000000', // Anonymous fallback
+        user_id: user?.id || null, // Use null for anonymous users
         stand_name: finalStandName,
         address: formData.location.formattedAddress || '',
         latitude: formData.location.latitude,
